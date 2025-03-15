@@ -5,84 +5,269 @@
 {% block page_title %}マイプロフィール{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto mt-8 mb-16">
-    <div class="bg-white p-8 rounded-lg shadow-md">
-        {% with messages = get_flashed_messages(with_categories=true) %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>マイプロフィール</h1>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+                </a>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="mb-4 p-4 rounded-md {% if category == 'danger' %}bg-red-100 text-red-700{% elif category == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                     {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {% endfor %}
             {% endif %}
-        {% endwith %}
-        
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">アカウント情報</h2>
+            {% endwith %}
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <p class="text-gray-600 mb-1">ユーザー名</p>
-                    <p class="text-lg font-medium">{{ current_user.username }}</p>
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">アカウント情報</h5>
                 </div>
-                
-                <div>
-                    <p class="text-gray-600 mb-1">メールアドレス</p>
-                    <p class="text-lg font-medium">{{ current_user.email }}</p>
-                </div>
-                
-                <div>
-                    <p class="text-gray-600 mb-1">アカウント作成日</p>
-                    <p class="text-lg font-medium">{{ current_user.created_at.strftime('%Y年%m月%d日') }}</p>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <div class="avatar-circle mx-auto">
+                                    <span class="avatar-text">{{ current_user.username[:1].upper() }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <h4>{{ current_user.username }}</h4>
+                            <p class="text-muted mb-2">{{ current_user.email }}</p>
+                            <p class="mb-1">
+                                <span class="badge {% if current_user.is_admin %}bg-danger{% else %}bg-secondary{% endif %} me-1">
+                                    {% if current_user.is_admin %}管理者{% else %}一般ユーザー{% endif %}
+                                </span>
+                                <span class="badge bg-info">{{ current_user.get_role_display() }}</span>
+                            </p>
+                            <p class="text-muted">
+                                <small>登録日: {{ current_user.created_at.strftime('%Y年%m月%d日') }}</small>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion" id="profileAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    プロフィール編集
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#profileAccordion">
+                                <div class="accordion-body">
+                                    <form method="POST" action="{{ url_for('auth.profile') }}">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="username" class="form-label">ユーザー名</label>
+                                                    <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="email" class="form-label">メールアドレス</label>
+                                                    <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <hr class="my-3">
+                                        <h5>パスワード変更</h5>
+                                        
+                                        <div class="mb-3">
+                                            <label for="current_password" class="form-label">現在のパスワード <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                                <button class="btn btn-outline-secondary" type="button" id="toggleCurrentPassword">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text">変更を適用するために現在のパスワードが必要です</div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="new_password" class="form-label">新しいパスワード</label>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control" id="new_password" name="new_password">
+                                                        <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="form-text">変更しない場合は空欄にしてください</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="confirm_password" class="form-label">新しいパスワード（確認）</label>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                                                        <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> 変更を保存
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    アカウント権限
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#profileAccordion">
+                                <div class="accordion-body">
+                                    <h5>あなたの権限</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>権限名</th>
+                                                    <th>ステータス</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>事業計画作成</td>
+                                                    <td>
+                                                        {% if current_user.has_permission('create_plan') %}
+                                                        <span class="badge bg-success"><i class="fas fa-check"></i> 許可</span>
+                                                        {% else %}
+                                                        <span class="badge bg-danger"><i class="fas fa-times"></i> 不許可</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>事業計画編集</td>
+                                                    <td>
+                                                        {% if current_user.has_permission('edit_plan') %}
+                                                        <span class="badge bg-success"><i class="fas fa-check"></i> 許可</span>
+                                                        {% else %}
+                                                        <span class="badge bg-danger"><i class="fas fa-times"></i> 不許可</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>事業計画削除</td>
+                                                    <td>
+                                                        {% if current_user.has_permission('delete_plan') %}
+                                                        <span class="badge bg-success"><i class="fas fa-check"></i> 許可</span>
+                                                        {% else %}
+                                                        <span class="badge bg-danger"><i class="fas fa-times"></i> 不許可</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>すべての計画閲覧</td>
+                                                    <td>
+                                                        {% if current_user.has_permission('view_all_plans') %}
+                                                        <span class="badge bg-success"><i class="fas fa-check"></i> 許可</span>
+                                                        {% else %}
+                                                        <span class="badge bg-danger"><i class="fas fa-times"></i> 不許可</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>ユーザー管理</td>
+                                                    <td>
+                                                        {% if current_user.has_permission('manage_users') %}
+                                                        <span class="badge bg-success"><i class="fas fa-check"></i> 許可</span>
+                                                        {% else %}
+                                                        <span class="badge bg-danger"><i class="fas fa-times"></i> 不許可</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="alert alert-info mt-3">
+                                        <i class="fas fa-info-circle"></i> 権限の変更が必要な場合は、管理者にお問い合わせください。
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="border-t pt-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">あなたの事業計画</h3>
-            
-            {% if current_user.business_plans.count() > 0 %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">計画名</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">会計年度</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">種類</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">作成日</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">アクション</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for plan in current_user.business_plans %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.name }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.fiscal_year }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-700 border">
-                                {% if plan.plan_type == 'current' %}
-                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">単年</span>
-                                {% else %}
-                                <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">来期</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.created_at.strftime('%Y/%m/%d') }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-700 border">
-                                <a href="{{ url_for('business_plan.view_plan', plan_id=plan.id) }}" class="text-blue-600 hover:underline">表示</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-gray-600">まだ事業計画を作成していません。</p>
-            <div class="mt-4">
-                <a href="{{ url_for('business_plan.create_plan') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
-                    事業計画を作成
-                </a>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
+
+{% block styles %}
+<style>
+.avatar-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #007bff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.avatar-text {
+    font-size: 42px;
+    color: white;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // パスワード表示切り替え - 現在のパスワード
+        const toggleCurrentBtn = document.getElementById('toggleCurrentPassword');
+        const currentPwdInput = document.getElementById('current_password');
+        
+        toggleCurrentBtn.addEventListener('click', function() {
+            const type = currentPwdInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            currentPwdInput.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('fa-eye');
+            this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+        
+        // パスワード表示切り替え - 新しいパスワード
+        const toggleNewBtn = document.getElementById('toggleNewPassword');
+        const newPwdInput = document.getElementById('new_password');
+        
+        toggleNewBtn.addEventListener('click', function() {
+            const type = newPwdInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            newPwdInput.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('fa-eye');
+            this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+        
+        // パスワード表示切り替え - 確認用パスワード
+        const toggleConfirmBtn = document.getElementById('toggleConfirmPassword');
+        const confirmPwdInput = document.getElementById('confirm_password');
+        
+        toggleConfirmBtn.addEventListener('click', function() {
+            const type = confirmPwdInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmPwdInput.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('fa-eye');
+            this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %} 

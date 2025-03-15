@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}計画と実績の比較 - {{ plan.name }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .variance-positive {
+        color: #198754;
+    }
+    .variance-negative {
+        color: #dc3545;
+    }
+    .tab-content {
+        border-left: 1px solid #dee2e6;
+        border-right: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        padding: 20px;
+        background-color: #fff;
+    }
+    .chart-container {
+        height: 400px;
+        margin-bottom: 30px;
+    }
+    .comparison-table th, .comparison-table td {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ plan.name }} - 計画と実績の比較</h1>
+        <a href="{{ url_for('actual_data.plan_actual', plan_id=plan.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> 月選択に戻る
+        </a>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- グラフ表示エリア -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">売上と利益の推移</h5>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="chartTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab" aria-controls="monthly" aria-selected="true">月次推移</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="cumulative-tab" data-bs-toggle="tab" data-bs-target="#cumulative" type="button" role="tab" aria-controls="cumulative" aria-selected="false">累計推移</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="chartTabsContent">
+                <div class="tab-pane fade show active" id="monthly" role="tabpanel" aria-labelledby="monthly-tab">
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="cumulative" role="tabpanel" aria-labelledby="cumulative-tab">
+                    <div class="chart-container">
+                        <canvas id="cumulativeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 月ごとの比較表 -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">月別計画・実績差異分析</h5>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="monthTabs" role="tablist">
+                {% for month_data in months_data %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if loop.first %}active{% endif %}" 
+                            id="month-{{ month_data.month }}-tab" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#month-{{ month_data.month }}" 
+                            type="button" 
+                            role="tab" 
+                            aria-controls="month-{{ month_data.month }}" 
+                            aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+                        {{ month_names[month_data.month] }}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="tab-content" id="monthTabsContent">
+                {% for month_data in months_data %}
+                <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                     id="month-{{ month_data.month }}" 
+                     role="tabpanel" 
+                     aria-labelledby="month-{{ month_data.month }}-tab">
+                    
+                    <div class="mt-3 mb-3">
+                        <h4 class="mb-3">{{ month_names[month_data.month] }}の計画・実績比較</h4>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered comparison-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th rowspan="2">カテゴリ</th>
+                                        <th colspan="2" class="text-center">金額</th>
+                                        <th colspan="2" class="text-center">差異</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-center">計画</th>
+                                        <th class="text-center">実績</th>
+                                        <th class="text-center">金額</th>
+                                        <th class="text-center">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category in categories %}
+                                        {% if category in month_data.categories %}
+                                            {% set cat_data = month_data.categories[category] %}
+                                            <tr class="fw-bold">
+                                                <td>{{ category }} 合計</td>
+                                                <td class="text-end">{{ "{:,}".format(cat_data.plan_total) }}円</td>
+                                                <td class="text-end">{{ "{:,}".format(cat_data.actual_total) }}円</td>
+                                                <td class="text-end {% if cat_data.variance > 0 %}variance-positive{% elif cat_data.variance < 0 %}variance-negative{% endif %}">
+                                                    {{ "{:,}".format(cat_data.variance) }}円
+                                                </td>
+                                                <td class="text-end {% if cat_data.variance_percent > 0 %}variance-positive{% elif cat_data.variance_percent < 0 %}variance-negative{% endif %}">
+                                                    {{ "%.1f"|format(cat_data.variance_percent) }}%
+                                                </td>
+                                            </tr>
+                                            {% for item in cat_data.items %}
+                                            <tr>
+                                                <td class="ps-4">・{{ item.name }}</td>
+                                                <td class="text-end">{{ "{:,}".format(item.plan) }}円</td>
+                                                <td class="text-end">{{ "{:,}".format(item.actual) }}円</td>
+                                                <td class="text-end {% if item.variance > 0 %}variance-positive{% elif item.variance < 0 %}variance-negative{% endif %}">
+                                                    {{ "{:,}".format(item.variance) }}円
+                                                </td>
+                                                <td class="text-end {% if item.variance_percent > 0 %}variance-positive{% elif item.variance_percent < 0 %}variance-negative{% endif %}">
+                                                    {{ "%.1f"|format(item.variance_percent) }}%
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- アクションボタン -->
+    <div class="mt-4 mb-5">
+        <div class="row">
+            <div class="col-md-6">
+                <a href="{{ url_for('actual_data.plan_actual', plan_id=plan.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> 月選択に戻る
+                </a>
+            </div>
+            <div class="col-md-6 text-end">
+                <a href="{{ url_for('actual_data.index') }}" class="btn btn-primary">
+                    <i class="bi bi-list"></i> 実績データ一覧に戻る
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // チャートデータを取得
+    fetch(`{{ url_for('actual_data.api_chart_data', plan_id=plan.id) }}`)
+        .then(response => response.json())
+        .then(data => {
+            // 月次グラフの描画
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            const monthlyChart = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '売上（計画）',
+                            data: data.monthly.sales.plan,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '売上（実績）',
+                            data: data.monthly.sales.actual,
+                            backgroundColor: 'rgba(54, 162, 235, 0.9)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '利益（計画）',
+                            data: data.monthly.profit.plan,
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '利益（実績）',
+                            data: data.monthly.profit.actual,
+                            backgroundColor: 'rgba(75, 192, 192, 0.9)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + '円';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '月別売上・利益推移'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.y.toLocaleString() + '円';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 累計グラフの描画
+            const cumulativeCtx = document.getElementById('cumulativeChart').getContext('2d');
+            const cumulativeChart = new Chart(cumulativeCtx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '売上累計（計画）',
+                            data: data.cumulative.sales.plan,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: '売上累計（実績）',
+                            data: data.cumulative.sales.actual,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 3,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: '利益累計（計画）',
+                            data: data.cumulative.profit.plan,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: '利益累計（実績）',
+                            data: data.cumulative.profit.actual,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 3,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + '円';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '累計売上・利益推移'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.y.toLocaleString() + '円';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('グラフデータの取得に失敗しました。');
+        });
+});
+</script>
+{% endblock %} 

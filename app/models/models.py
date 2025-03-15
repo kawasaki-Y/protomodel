@@ -65,6 +65,8 @@ class PlanItem(db.Model):
     children = relationship('PlanItem', 
                            backref=backref('parent', remote_side=[id]),
                            cascade='all, delete-orphan')
+    # 実績データとのリレーションシップを追加
+    actual_data = relationship('ActualData', back_populates='plan_item', cascade='all, delete-orphan')
     
     def get_amount_for_month(self, month):
         """指定された月の金額を取得する"""
@@ -154,6 +156,15 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    # 権限管理の拡張
+    # role = db.Column(db.String(20), default='user')  # 'admin', 'manager', 'user', 'viewer'
+    # permissions = db.Column(db.JSON, default=lambda: {
+    #     'create_plan': True,
+    #     'edit_plan': True,
+    #     'delete_plan': False,
+    #     'view_all_plans': False,
+    #     'manage_users': False
+    # })
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -168,5 +179,66 @@ class User(UserMixin, db.Model):
         """パスワードが正しいか確認する"""
         return check_password_hash(self.password_hash, password)
     
+    def has_permission(self, permission):
+        """特定の権限を持っているか確認する"""
+        if self.is_admin:
+            return True
+        
+        # if permission == 'manage_users':
+        #     return False
+            
+        # return self.permissions.get(permission, False)
+        
+        # 簡略版: 管理者以外は基本的な操作のみ許可
+        if permission in ['create_plan', 'edit_plan']:
+            return True
+        return False
+    
+    def get_role_display(self):
+        """ロール名の表示用文字列を取得する"""
+        # roles = {
+        #     'admin': '管理者',
+        #     'manager': 'マネージャー',
+        #     'user': '一般ユーザー',
+        #     'viewer': '閲覧専用'
+        # }
+        # return roles.get(self.role, '不明')
+        if self.is_admin:
+            return '管理者'
+        return '一般ユーザー'
+    
     def __repr__(self):
-        return f'<User {self.username}>' 
+        return f'<User {self.username}>'
+
+
+class ActualData(db.Model):
+    """実績データモデル"""
+    __tablename__ = 'actual_data'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    plan_item_id = db.Column(db.Integer, db.ForeignKey('plan_items.id'), nullable=False)
+    month = db.Column(db.Integer, nullable=False)  # 1-12の月
+    amount = db.Column(db.Integer, default=0)  # 実績金額
+    notes = db.Column(db.Text, nullable=True)  # メモ
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # リレーションシップ
+    plan_item = relationship('PlanItem', back_populates='actual_data')
+    
+    def __repr__(self):
+        return f'<ActualData for {self.plan_item.name} Month:{self.month}>'
+    
+    @property
+    def variance(self):
+        """計画との差異を計算（実績 - 計画）"""
+        plan_amount = self.plan_item.get_amount_for_month(self.month)
+        return self.amount - plan_amount
+    
+    @property
+    def variance_percent(self):
+        """計画との差異をパーセンテージで計算"""
+        plan_amount = self.plan_item.get_amount_for_month(self.month)
+        if plan_amount == 0:
+            return 0 if self.amount == 0 else float('inf')
+        return (self.amount - plan_amount) / abs(plan_amount) * 100 

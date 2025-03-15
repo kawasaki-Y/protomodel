@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}実績データ入力 - {{ plan.name }} ({{ month_name }}){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ plan.name }} - {{ month_name }}実績データ入力</h1>
+        <a href="{{ url_for('actual_data.plan_actual', plan_id=plan.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> 月選択に戻る
+        </a>
+    </div>
+    
+    <div id="messages-container">
+        <!-- ここにAjax処理後のメッセージが表示されます -->
+    </div>
+    
+    <!-- 実績入力フォーム -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">{{ month_name }}実績データ入力</h5>
+            <div>
+                <button id="save-button" class="btn btn-primary">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <form id="actual-data-form">
+                <!-- テーブル形式で入力フォームを表示 -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40%">項目名</th>
+                                <th style="width: 20%">カテゴリ</th>
+                                <th style="width: 15%">計画値</th>
+                                <th style="width: 15%">実績値</th>
+                                <th style="width: 10%">備考</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.category }}</td>
+                                <td class="text-end">{{ "{:,}".format(item.get_amount_for_month(month)) }}円</td>
+                                <td>
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <input 
+                                        type="number" 
+                                        class="form-control actual-amount" 
+                                        name="amount" 
+                                        value="{{ item.actual_amount }}"
+                                        data-item-id="{{ item.id }}"
+                                        placeholder="実績値を入力"
+                                    >
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary notes-btn" data-bs-toggle="modal" data-bs-target="#notesModal{{ item.id }}">
+                                        <i class="bi bi-sticky"></i>
+                                    </button>
+                                    
+                                    <!-- 備考モーダル -->
+                                    <div class="modal fade" id="notesModal{{ item.id }}" tabindex="-1" aria-labelledby="notesModalLabel{{ item.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="notesModalLabel{{ item.id }}">{{ item.name }} - 備考</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <textarea 
+                                                        class="form-control notes-text" 
+                                                        data-item-id="{{ item.id }}" 
+                                                        rows="4" 
+                                                        placeholder="備考を入力してください"
+                                                    >{{ item.actual_notes }}</textarea>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+            
+            <div class="d-flex justify-content-end mt-3">
+                <button id="save-button-bottom" class="btn btn-primary">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- アクションボタン -->
+    <div class="mt-4 d-flex justify-content-between">
+        <a href="{{ url_for('actual_data.plan_actual', plan_id=plan.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> 月選択に戻る
+        </a>
+        <a href="{{ url_for('actual_data.plan_comparison', plan_id=plan.id) }}" class="btn btn-success">
+            <i class="bi bi-bar-chart"></i> 計画比較を表示
+        </a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 保存ボタンのイベントリスナー
+    const saveButtons = document.querySelectorAll('#save-button, #save-button-bottom');
+    saveButtons.forEach(button => {
+        button.addEventListener('click', saveActualData);
+    });
+    
+    // 実績データ保存処理
+    function saveActualData() {
+        // 保存ボタンをロード中表示に変更
+        saveButtons.forEach(btn => {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
+            btn.disabled = true;
+        });
+        
+        // 送信データを準備
+        const items = document.querySelectorAll('.actual-amount');
+        const data = [];
+        
+        items.forEach(input => {
+            const itemId = input.dataset.itemId;
+            const amount = input.value || 0;
+            const notes = document.querySelector(`.notes-text[data-item-id="${itemId}"]`).value || '';
+            
+            data.push({
+                item_id: itemId,
+                amount: amount,
+                notes: notes
+            });
+        });
+        
+        // APIにデータを送信
+        fetch(`{{ url_for('actual_data.save_month_actual', plan_id=plan.id, month=month) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            // メッセージを表示
+            const alertClass = result.status === 'success' ? 'success' : 'danger';
+            const message = `
+                <div class="alert alert-${alertClass} alert-dismissible fade show" role="alert">
+                    ${result.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            document.getElementById('messages-container').innerHTML = message;
+            
+            // ページ上部にスクロール
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const message = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    エラーが発生しました。もう一度お試しください。
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            document.getElementById('messages-container').innerHTML = message;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        })
+        .finally(() => {
+            // 保存ボタンを元に戻す
+            saveButtons.forEach(btn => {
+                btn.innerHTML = '<i class="bi bi-save"></i> 保存';
+                btn.disabled = false;
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 

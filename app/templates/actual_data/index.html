@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}実績データ入力{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">実績データ入力</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">事業計画一覧</h5>
+                </div>
+                <div class="card-body">
+                    {% if plans %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>事業計画名</th>
+                                        <th>年度</th>
+                                        <th>作成者</th>
+                                        <th>作成日</th>
+                                        <th>最終更新日</th>
+                                        <th>アクション</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for plan in plans %}
+                                    <tr>
+                                        <td>{{ plan.name }}</td>
+                                        <td>{{ plan.fiscal_year }}年度</td>
+                                        <td>{{ plan.user.username }}</td>
+                                        <td>{{ plan.created_at.strftime('%Y/%m/%d') }}</td>
+                                        <td>{{ plan.updated_at.strftime('%Y/%m/%d') }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{{ url_for('actual_data.plan_actual', plan_id=plan.id) }}" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-pencil-square"></i> 実績入力
+                                                </a>
+                                                <a href="{{ url_for('actual_data.plan_comparison', plan_id=plan.id) }}" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-bar-chart"></i> 計画比較
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            事業計画が登録されていません。まずは事業計画を作成してください。
+                        </div>
+                        <a href="{{ url_for('business_plan.create_plan') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> 新しい事業計画を作成
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> ダッシュボードに戻る
+        </a>
+    </div>
+</div>
+{% endblock %} 

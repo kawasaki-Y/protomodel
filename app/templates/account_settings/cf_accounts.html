@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block page_title %}資金繰り用科目設定{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">資金繰り用科目一覧</h3>
+            <p class="text-gray-600 mb-4">資金繰り計画で使用する科目の管理ができます。</p>
+            
+            <button class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg">
+                <i class="fas fa-plus mr-2"></i>新規科目追加
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">科目コード</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">科目名</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">資金区分</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">表示順</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="py-3 px-4 border-b border-gray-200">CF001</td>
+                        <td class="py-3 px-4 border-b border-gray-200">売上入金</td>
+                        <td class="py-3 px-4 border-b border-gray-200">入金</td>
+                        <td class="py-3 px-4 border-b border-gray-200">10</td>
+                        <td class="py-3 px-4 border-b border-gray-200">
+                            <button class="text-blue-500 hover:text-blue-700 mr-2">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 border-b border-gray-200">CF101</td>
+                        <td class="py-3 px-4 border-b border-gray-200">仕入支払</td>
+                        <td class="py-3 px-4 border-b border-gray-200">出金</td>
+                        <td class="py-3 px-4 border-b border-gray-200">20</td>
+                        <td class="py-3 px-4 border-b border-gray-200">
+                            <button class="text-blue-500 hover:text-blue-700 mr-2">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 border-b border-gray-200">CF201</td>
+                        <td class="py-3 px-4 border-b border-gray-200">人件費支払</td>
+                        <td class="py-3 px-4 border-b border-gray-200">出金</td>
+                        <td class="py-3 px-4 border-b border-gray-200">30</td>
+                        <td class="py-3 px-4 border-b border-gray-200">
+                            <button class="text-blue-500 hover:text-blue-700 mr-2">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

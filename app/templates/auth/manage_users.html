@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}ユーザー管理{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>ユーザー管理</h1>
+        <a href="{{ url_for('auth.create_user') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> 新規ユーザー作成
+        </a>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>ユーザー名</th>
+                            <th>メールアドレス</th>
+                            <th>権限</th>
+                            <th>ロール</th>
+                            <th>登録日</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.is_admin %}
+                                <span class="badge bg-danger">管理者</span>
+                                {% else %}
+                                <span class="badge bg-secondary">一般</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.get_role_display() }}</td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="{{ url_for('auth.edit_user', user_id=user.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i> 編集
+                                </a>
+                                {% if user.id != current_user.id %}
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ user.id }}">
+                                    <i class="fas fa-trash"></i> 削除
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- 削除確認モーダル -->
+                        <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ user.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deleteModalLabel{{ user.id }}">ユーザー削除の確認</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        ユーザー「{{ user.username }}」を削除してもよろしいですか？
+                                        <div class="alert alert-warning mt-3">
+                                            <i class="fas fa-exclamation-triangle"></i> この操作は取り消せません。
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                        <form action="{{ url_for('auth.delete_user', user_id=user.id) }}" method="POST">
+                                            <button type="submit" class="btn btn-danger">削除する</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if not users %}
+            <div class="text-center p-4">
+                <p class="text-muted">ユーザーが登録されていません</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

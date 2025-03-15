@@ -64,6 +64,33 @@
         .dropdown.open .dropdown-menu {
             display: block;
         }
+        
+        /* サイドバーのドロップダウンメニュー用スタイル */
+        .sidebar-dropdown {
+            position: relative;
+        }
+        
+        .sidebar-dropdown-menu {
+            display: none;
+            position: relative;
+            padding-left: 2.5rem;
+            background-color: rgba(55, 65, 81, 0.5);
+        }
+        
+        .sidebar-dropdown:hover .sidebar-dropdown-menu {
+            display: block;
+        }
+        
+        .sidebar-dropdown-menu a {
+            padding: 0.5rem 1rem;
+            display: block;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-dropdown-menu a:hover {
+            background-color: rgba(55, 65, 81, 0.8);
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -102,11 +129,73 @@
                             <span>資金繰り計画</span>
                         </a>
                     </li>
+                    {# 実績データ入力機能は現在無効です
+                    <li class="mb-1">
+                        <a href="{{ url_for('actual_data.index') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/actual-data') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-clipboard-check mr-3"></i>
+                            <span>実績データ入力</span>
+                        </a>
+                    </li>
+                    #}
                     <li class="mb-1">
                         <a href="{{ url_for('analytics.analytics_dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/analytics') %}bg-blue-600{% endif %}">
                             <i class="fas fa-chart-bar mr-3"></i>
                             <span>分析ダッシュボード</span>
                         </a>
+                    </li>
+                    
+                    <li class="mb-1">
+                        <a href="{{ url_for('main.dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/reports') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-file-alt mr-3"></i>
+                            <span>レポート</span>
+                        </a>
+                    </li>
+                    
+                    <li class="mb-1 sidebar-dropdown">
+                        <a href="#" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/account-settings') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-list-alt mr-3"></i>
+                            <span>勘定科目設定</span>
+                            <i class="fas fa-chevron-down ml-auto text-xs"></i>
+                        </a>
+                        <div class="sidebar-dropdown-menu">
+                            <a href="{{ url_for('account_settings.pl_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/pl') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-chart-pie mr-2"></i>損益計算書科目
+                            </a>
+                            <a href="{{ url_for('account_settings.bs_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/bs') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-balance-scale-right mr-2"></i>貸借対照表科目
+                            </a>
+                            <a href="{{ url_for('account_settings.cf_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/cf') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-money-check-alt mr-2"></i>資金繰り用科目
+                            </a>
+                            <a href="{{ url_for('account_settings.capital_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/capital') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-coins mr-2"></i>資本政策科目
+                            </a>
+                        </div>
+                    </li>
+                    
+                    <li class="mb-1 sidebar-dropdown">
+                        <a href="#" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/settings') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-cog mr-3"></i>
+                            <span>各種設定</span>
+                            <i class="fas fa-chevron-down ml-auto text-xs"></i>
+                        </a>
+                        <div class="sidebar-dropdown-menu">
+                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/business') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-building mr-2"></i>事業者
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/opening-balance') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-balance-scale mr-2"></i>開始残高
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/tax') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-percentage mr-2"></i>税区分
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/department') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-sitemap mr-2"></i>部門
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/tags') %}bg-blue-600{% endif %}">
+                                <i class="fas fa-tags mr-2"></i>タグ
+                            </a>
+                        </div>
                     </li>
                     
                     <li class="mb-1 mt-6 border-t border-gray-700 pt-4">
