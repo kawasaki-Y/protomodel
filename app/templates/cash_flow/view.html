@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cash_flow_plan.name }} | 事業計画システム{% endblock %}
+
+{% block page_title %}{{ cash_flow_plan.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-2">
+    <button id="saveChangesBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+        <i class="fas fa-save mr-2"></i> 変更を保存
+    </button>
+    <button id="syncBusinessPlanBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+        <i class="fas fa-sync-alt mr-2"></i> 事業計画から同期
+    </button>
+    <button id="addItemBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <i class="fas fa-plus mr-2"></i> 項目追加
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .editable-cell {
+        background-color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+    }
+    
+    .editable-cell:hover {
+        background-color: rgba(219, 234, 254, 0.5);
+    }
+    
+    .item-row:hover {
+        background-color: rgba(243, 244, 246, 0.8);
+    }
+    
+    .item-row.header {
+        background-color: rgba(243, 244, 246, 0.5);
+        font-weight: 600;
+    }
+    
+    .child-item {
+        padding-left: 2rem;
+    }
+    
+    .grand-child-item {
+        padding-left: 4rem;
+    }
+    
+    .table-fixed-header {
+        overflow-y: auto;
+        max-height: 70vh;
+    }
+    
+    .table-fixed-header thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f9fafb;
+        z-index: 1;
+    }
+    
+    .table-fixed-header th:first-child {
+        position: sticky;
+        left: 0;
+        background-color: #f9fafb;
+        z-index: 2;
+    }
+    
+    .table-fixed-header tbody td:first-child {
+        position: sticky;
+        left: 0;
+        background-color: white;
+        z-index: 1;
+    }
+    
+    /* 5日区切りのカラムスタイル */
+    .cash-flow-table th,
+    .cash-flow-table td {
+        min-width: 100px;
+        max-width: 100px;
+    }
+    
+    .cash-flow-table th.month-start {
+        background-color: #e5e7eb;
+        border-left: 2px solid #9ca3af;
+    }
+    
+    .cash-flow-table td.month-start {
+        border-left: 2px solid #9ca3af;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex flex-wrap gap-4 mb-6">
+        <div class="bg-gray-100 px-4 py-2 rounded-lg">
+            <span class="text-sm text-gray-500">関連事業計画</span>
+            <p class="font-semibold">{{ business_plan.name }}</p>
+        </div>
+        <div class="bg-gray-100 px-4 py-2 rounded-lg">
+            <span class="text-sm text-gray-500">会計年度</span>
+            <p class="font-semibold">{{ cash_flow_plan.fiscal_year }}</p>
+        </div>
+        <div class="bg-gray-100 px-4 py-2 rounded-lg">
+            <span class="text-sm text-gray-500">期間</span>
+            <p class="font-semibold">{{ business_plan.start_month }}月 ～ {{ business_plan.end_month }}月</p>
+        </div>
+        <div class="bg-gray-100 px-4 py-2 rounded-lg">
+            <span class="text-sm text-gray-500">最終更新日</span>
+            <p class="font-semibold">{{ cash_flow_plan.updated_at.strftime('%Y/%m/%d') }}</p>
+        </div>
+    </div>
+    
+    <div class="bg-blue-50 p-4 rounded-lg mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0 mt-0.5">
+                <i class="fas fa-info-circle text-blue-600"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">入力方法</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p>金額をクリックして編集できます。入力後はEnterキーで確定、または他の場所をクリックしてください。</p>
+                    <p>「事業計画から同期」ボタンを押すと、事業計画の数値が資金繰り計画に反映されます。</p>
+                    <p>「変更を保存」ボタンを押すと、すべての変更がサーバーに保存されます。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-fixed-header overflow-x-auto">
+        <table class="min-w-full border-collapse cash-flow-table">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border bg-gray-50 min-w-[300px]">
+                        項目
+                    </th>
+                    {% for month_day in months_days %}
+                    <th class="px-2 py-2 text-right text-sm font-medium text-gray-600 tracking-wider border bg-gray-50 {{ 'month-start' if month_day.endswith('5日') }}">
+                        {{ month_day }}
+                    </th>
+                    {% endfor %}
+                    <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 tracking-wider border bg-gray-50 min-w-[80px]">
+                        操作
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="cashFlowItemsBody">
+                {% for item in root_items %}
+                <!-- 親項目 -->
+                <tr class="item-row header" data-item-id="{{ item.id }}" data-parent-id="null">
+                    <td class="px-4 py-2 text-sm text-gray-800 border font-medium">{{ item.name }}</td>
+                    
+                    {% set month_index = 0 %}
+                    {% for month in range(1, 13) %}
+                        {% for day_type in ['d5', 'd10', 'd15', 'd20', 'd25', 'end'] %}
+                            {% set attr_name = 'm' ~ month ~ '_' ~ day_type %}
+                            {% set attr_val = item[attr_name]|default(0) %}
+                            <td class="px-2 py-2 text-sm text-right border font-semibold {{ 'month-start' if day_type == 'd5' }}">
+                                {{ "{:,}".format(attr_val) }}
+                            </td>
+                            {% set month_index = month_index + 1 %}
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    <td class="px-4 py-2 text-sm text-center border">
+                        <button class="text-gray-600 hover:text-blue-600 add-child-btn" data-parent-id="{{ item.id }}">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                    </td>
+                </tr>
+                
+                {% for child in item.children %}
+                <!-- 子項目 -->
+                <tr class="item-row" data-item-id="{{ child.id }}" data-parent-id="{{ item.id }}">
+                    <td class="px-4 py-2 text-sm text-gray-800 border child-item">{{ child.name }}</td>
+                    
+                    {% for month in range(1, 13) %}
+                        {% for day_type in ['d5', 'd10', 'd15', 'd20', 'd25', 'end'] %}
+                            {% set attr_name = 'm' ~ month ~ '_' ~ day_type %}
+                            {% set attr_val = child[attr_name]|default(0) %}
+                            <td class="px-2 py-2 text-sm text-right border editable-cell {{ 'month-start' if day_type == 'd5' }}" 
+                                data-item-id="{{ child.id }}" 
+                                data-month="{{ month }}" 
+                                data-day-type="{{ day_type }}"
+                                data-value="{{ attr_val }}">
+                                {{ "{:,}".format(attr_val) }}
+                            </td>
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    <td class="px-4 py-2 text-sm text-center border">
+                        <div class="flex justify-center space-x-2">
+                            <button class="text-gray-600 hover:text-blue-600 add-child-btn" data-parent-id="{{ child.id }}">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                            <button class="text-gray-600 hover:text-red-600 delete-item-btn" data-item-id="{{ child.id }}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                
+                {% for grandchild in child.children %}
+                <!-- 孫項目 -->
+                <tr class="item-row" data-item-id="{{ grandchild.id }}" data-parent-id="{{ child.id }}">
+                    <td class="px-4 py-2 text-sm text-gray-800 border grand-child-item">{{ grandchild.name }}</td>
+                    
+                    {% for month in range(1, 13) %}
+                        {% for day_type in ['d5', 'd10', 'd15', 'd20', 'd25', 'end'] %}
+                            {% set attr_name = 'm' ~ month ~ '_' ~ day_type %}
+                            {% set attr_val = grandchild[attr_name]|default(0) %}
+                            <td class="px-2 py-2 text-sm text-right border editable-cell {{ 'month-start' if day_type == 'd5' }}" 
+                                data-item-id="{{ grandchild.id }}" 
+                                data-month="{{ month }}" 
+                                data-day-type="{{ day_type }}"
+                                data-value="{{ attr_val }}">
+                                {{ "{:,}".format(attr_val) }}
+                            </td>
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    <td class="px-4 py-2 text-sm text-center border">
+                        <button class="text-gray-600 hover:text-red-600 delete-item-btn" data-item-id="{{ grandchild.id }}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 項目追加モーダル -->
+<div id="addItemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-gray-800">項目の追加</h3>
+            <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="addItemForm">
+            <input type="hidden" id="parentIdInput" name="parent_id" value="">
+            
+            <div class="mb-4">
+                <label for="itemName" class="block text-sm font-medium text-gray-700 mb-1">項目名 <span class="text-red-600">*</span></label>
+                <input type="text" id="itemName" name="name" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div class="mb-4">
+                <label for="itemCategory" class="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
+                <select id="itemCategory" name="category"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="営業収入">営業収入</option>
+                    <option value="営業支出">営業支出</option>
+                    <option value="投資収入">投資収入</option>
+                    <option value="投資支出">投資支出</option>
+                    <option value="財務収入">財務収入</option>
+                    <option value="財務支出">財務支出</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label for="itemDescription" class="block text-sm font-medium text-gray-700 mb-1">説明</label>
+                <textarea id="itemDescription" name="description" rows="2"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label for="relatedPlanItemId" class="block text-sm font-medium text-gray-700 mb-1">関連事業計画項目</label>
+                <select id="relatedPlanItemId" name="related_plan_item_id"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">なし</option>
+                    <!-- 実際のアプリでは事業計画の項目をJavaScriptで動的に読み込む -->
+                </select>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="cancelAddItemBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md">
+                    キャンセル
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm">
+                    追加
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- 資金繰り計画ID用の隠しフィールド -->
+<input type="hidden" id="cash_flow_plan_id" value="{{ cash_flow_plan.id }}">
+
+<!-- 関連事業計画項目のデータ -->
+<div id="plan_items_data" style="display: none;" data-items="{{ plan_items_json if plan_items_json else '[]' }}"></div>
+
+<!-- 資金繰り計画管理用JavaScript -->
+<script src="{{ url_for('static', filename='js/cash_flow.js') }}"></script>
+{% endblock %} 

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ plan.name }} | 事業計画レポート</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+</head>
+<body>
+    <div class="report-container">
+        <div class="report-header">
+            <h1 class="report-title">{{ plan.name }}</h1>
+            <div class="report-subtitle">{{ plan.fiscal_year }}年度 事業計画書</div>
+            <div class="report-date">作成日: {{ current_date }}</div>
+        </div>
+
+        <div class="report-section">
+            <h2 class="section-title">1. 概要</h2>
+            <div class="section-content">
+                <p>{{ plan.description or "本事業計画は、会社の年間事業目標を定め、実行するための計画書です。" }}</p>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <h2 class="section-title">2. 事業計画</h2>
+            <div class="section-content">
+                <table class="data-table">
+                    <thead>
+                        <tr class="header">
+                            <th rowspan="2">項目</th>
+                            {% for month in range(1, 13) %}
+                            <th>{{ month }}月</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr class="{{ 'total' if item.item_type == 'total' else '' }}">
+                            <td class="item-name">{{ item.name }}</td>
+                            {% for month in range(1, 13) %}
+                            <td>{{ "{:,}".format(item.get_amount_for_month(month)) }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if cash_flow_items %}
+        <div class="report-section">
+            <h2 class="section-title">3. 資金繰り計画</h2>
+            <div class="section-content">
+                <table class="cash-flow-table">
+                    <thead>
+                        <tr>
+                            <th>項目</th>
+                            <th>1月前半</th>
+                            <th>1月後半</th>
+                            <th>2月前半</th>
+                            <th>2月後半</th>
+                            <th>3月前半</th>
+                            <th>3月後半</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cash_flow_items %}
+                        <tr>
+                            <td class="item-name">{{ item.name }}</td>
+                            <td>{{ "{:,}".format((item.m1_d5 or 0) + (item.m1_d10 or 0) + (item.m1_d15 or 0)) }}</td>
+                            <td>{{ "{:,}".format((item.m1_d20 or 0) + (item.m1_d25 or 0) + (item.m1_end or 0)) }}</td>
+                            <td>{{ "{:,}".format((item.m2_d5 or 0) + (item.m2_d10 or 0) + (item.m2_d15 or 0)) }}</td>
+                            <td>{{ "{:,}".format((item.m2_d20 or 0) + (item.m2_d25 or 0) + (item.m2_end or 0)) }}</td>
+                            <td>{{ "{:,}".format((item.m3_d5 or 0) + (item.m3_d10 or 0) + (item.m3_d15 or 0) if hasattr(item, 'm3_d5') else 0) }}</td>
+                            <td>{{ "{:,}".format((item.m3_d20 or 0) + (item.m3_d25 or 0) + (item.m3_end or 0) if hasattr(item, 'm3_d20') else 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="report-section">
+            <h2 class="section-title">4. まとめ</h2>
+            <div class="section-content">
+                <p>本事業計画に基づき、定期的な進捗確認と必要に応じた計画の見直しを行いながら、目標達成に向けて事業を推進します。</p>
+            </div>
+        </div>
+
+        <div class="report-footer">
+            <p>© {{ current_year }} 株式会社サンプル All Rights Reserved.</p>
+            <p>作成日: {{ current_date }}</p>
+        </div>
+    </div>
+</body>
+</html> 

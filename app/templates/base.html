@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}事業計画システム{% endblock %}</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- カスタムCSS -->
+    <style>
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                overflow: hidden;
+                transition: width 0.3s;
+            }
+            
+            .sidebar.open {
+                width: 250px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                transition: margin-left 0.3s;
+            }
+            
+            .main-content.sidebar-open {
+                margin-left: 250px;
+            }
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            min-width: 10rem;
+            z-index: 20;
+        }
+        
+        .dropdown.open .dropdown-menu {
+            display: block;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <div class="flex">
+        <!-- サイドバー -->
+        <aside class="sidebar bg-gray-800 text-white">
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-xl font-bold">事業計画システム</h1>
+            </div>
+            <nav class="mt-4">
+                <ul>
+                    <li class="mb-1">
+                        <a href="{{ url_for('main.dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/dashboard' %}bg-blue-600{% endif %}">
+                            <i class="fas fa-chart-line mr-3"></i>
+                            <span>ダッシュボード</span>
+                        </a>
+                    </li>
+                    
+                    {% if current_user.is_authenticated %}
+                    <li class="mb-1">
+                        <a href="{{ url_for('business_plan.current_plan') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/business-plan/current') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-calendar-alt mr-3"></i>
+                            <span>単年事業計画</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ url_for('business_plan.next_plan') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/business-plan/next') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-calendar-plus mr-3"></i>
+                            <span>来期事業計画</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ url_for('cash_flow.cash_flow') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/cash-flow') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-money-bill-wave mr-3"></i>
+                            <span>資金繰り計画</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ url_for('analytics.analytics_dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/analytics') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-chart-bar mr-3"></i>
+                            <span>分析ダッシュボード</span>
+                        </a>
+                    </li>
+                    
+                    <li class="mb-1 mt-6 border-t border-gray-700 pt-4">
+                        <a href="{{ url_for('auth.profile') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/profile' %}bg-blue-600{% endif %}">
+                            <i class="fas fa-user mr-3"></i>
+                            <span>マイプロフィール</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded">
+                            <i class="fas fa-sign-out-alt mr-3"></i>
+                            <span>ログアウト</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="mb-1 mt-6 border-t border-gray-700 pt-4">
+                        <a href="{{ url_for('auth.login') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/login' %}bg-blue-600{% endif %}">
+                            <i class="fas fa-sign-in-alt mr-3"></i>
+                            <span>ログイン</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ url_for('auth.register') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/register' %}bg-blue-600{% endif %}">
+                            <i class="fas fa-user-plus mr-3"></i>
+                            <span>新規登録</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content w-full">
+            <div class="container mx-auto">
+                {% if current_user.is_authenticated %}
+                <div class="flex justify-end mb-4">
+                    <div class="dropdown">
+                        <button class="flex items-center px-3 py-2 bg-white rounded-lg shadow hover:bg-gray-50" id="userDropdown">
+                            <span class="mr-2">{{ current_user.username }}</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div class="dropdown-menu mt-1 bg-white shadow-lg rounded-lg py-2">
+                            <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i> プロフィール
+                            </a>
+                            <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i> ログアウト
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="bg-white shadow-md rounded-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">{% block page_title %}ページタイトル{% endblock %}</h2>
+                        <div>
+                            {% block page_actions %}{% endblock %}
+                        </div>
+                    </div>
+                    
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- モバイル用メニュートグル -->
+    <button id="sidebarToggle" class="fixed bottom-4 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg md:hidden">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- JavaScript -->
+    <script>
+        // サイドバートグル
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            
+            sidebar.classList.toggle('open');
+            mainContent.classList.toggle('sidebar-open');
+        });
+        
+        // ユーザードロップダウンメニュー
+        const userDropdown = document.getElementById('userDropdown');
+        if (userDropdown) {
+            userDropdown.addEventListener('click', function() {
+                const dropdown = this.closest('.dropdown');
+                dropdown.classList.toggle('open');
+            });
+            
+            // 画面クリックでドロップダウンを閉じる
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('#userDropdown')) {
+                    const dropdown = document.querySelector('.dropdown');
+                    if (dropdown && dropdown.classList.contains('open')) {
+                        dropdown.classList.remove('open');
+                    }
+                }
+            });
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

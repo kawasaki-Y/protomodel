@@ -1,0 +1,13 @@
+flask==2.3.3
+flask-sqlalchemy==3.1.1
+sqlalchemy==2.0.23
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+Jinja2==3.1.2
+itsdangerous==2.1.2
+click==8.1.7
+flask-wtf==1.2.1
+wtforms==3.1.0
+weasyprint==60.1  # PDF出力用
+python-pptx==0.6.21  # PPT出力用
+gunicorn==21.2.0  # デプロイ用 

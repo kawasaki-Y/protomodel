@@ -1,0 +1,578 @@
+{% extends 'base.html' %}
+
+{% block title %}分析ダッシュボード{% endblock %}
+
+{% block styles %}
+<style>
+.chart-container {
+    width: 100%;
+    margin-bottom: 30px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #fff;
+}
+
+.chart-img {
+    width: 100%;
+    max-width: 800px;
+    display: block;
+    margin: 0 auto;
+}
+
+.plan-selector {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.data-table {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: right;
+}
+
+.data-table th {
+    background-color: #f2f2f2;
+    text-align: center;
+}
+
+.data-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.data-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tabs {
+    overflow: hidden;
+    border: 1px solid #ddd;
+    background-color: #f1f1f1;
+    border-radius: 8px 8px 0 0;
+}
+
+.tabs button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+.tabs button:hover {
+    background-color: #ddd;
+}
+
+.tabs button.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.loading {
+    text-align: center;
+    margin: 40px 0;
+    font-size: 18px;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-info {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+}
+
+.alert-warning {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">事業計画分析ダッシュボード</h1>
+    
+    <div class="tabs">
+        <button class="tab-link active" onclick="openTab(event, 'plan-comparison')">事業計画比較</button>
+        <button class="tab-link" onclick="openTab(event, 'monthly-trend')">月次トレンド</button>
+        <button class="tab-link" onclick="openTab(event, 'cash-flow-analysis')">資金繰り分析</button>
+    </div>
+    
+    <!-- 事業計画比較タブ -->
+    <div id="plan-comparison" class="tab-content active">
+        <div class="plan-selector">
+            <h3>事業計画の比較</h3>
+            <p>比較したい事業計画を選択してください（複数選択可）：</p>
+            
+            {% if business_plans %}
+                <form id="comparison-form">
+                    <div class="row">
+                        {% for plan in business_plans %}
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="plan_ids" value="{{ plan.id }}" id="plan-{{ plan.id }}">
+                                    <label class="form-check-label" for="plan-{{ plan.id }}">
+                                        {{ plan.name }} ({{ plan.fiscal_year }}年度)
+                                    </label>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary mt-3" onclick="comparePlans()">比較分析</button>
+                </form>
+            {% else %}
+                <div class="alert alert-warning">
+                    事業計画がありません。まずは事業計画を作成してください。
+                </div>
+            {% endif %}
+        </div>
+        
+        <div id="comparison-results" style="display: none;">
+            <div id="comparison-loading" class="loading">
+                <p>分析中...</p>
+            </div>
+            
+            <div id="comparison-data" style="display: none;">
+                <h4>比較データ</h4>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>事業計画</th>
+                                <th>年度</th>
+                                <th>売上合計</th>
+                                <th>費用合計</th>
+                                <th>利益</th>
+                                <th>利益率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table-body">
+                            <!-- JavaScriptで動的に追加 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>事業計画比較グラフ</h4>
+                            <img id="comparison-chart" class="chart-img" src="" alt="事業計画比較グラフ">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>利益率比較</h4>
+                            <img id="margin-chart" class="chart-img" src="" alt="利益率比較グラフ">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 月次トレンドタブ -->
+    <div id="monthly-trend" class="tab-content">
+        <div class="plan-selector">
+            <h3>月次トレンド分析</h3>
+            <p>分析したい事業計画を選択してください：</p>
+            
+            {% if business_plans %}
+                <form id="trend-form">
+                    <div class="form-group">
+                        <select class="form-control" id="trend-plan-select">
+                            <option value="">-- 事業計画を選択 --</option>
+                            {% for plan in business_plans %}
+                                <option value="{{ plan.id }}">{{ plan.name }} ({{ plan.fiscal_year }}年度)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary mt-3" onclick="analyzeTrend()">トレンド分析</button>
+                </form>
+            {% else %}
+                <div class="alert alert-warning">
+                    事業計画がありません。まずは事業計画を作成してください。
+                </div>
+            {% endif %}
+        </div>
+        
+        <div id="trend-results" style="display: none;">
+            <div id="trend-loading" class="loading">
+                <p>分析中...</p>
+            </div>
+            
+            <div id="trend-data" style="display: none;">
+                <h4 id="trend-plan-name"></h4>
+                
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>月</th>
+                                <th>売上</th>
+                                <th>費用</th>
+                                <th>利益</th>
+                                <th>利益率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trend-table-body">
+                            <!-- JavaScriptで動的に追加 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="chart-container">
+                            <h4>月次推移グラフ</h4>
+                            <img id="trend-chart" class="chart-img" src="" alt="月次推移グラフ">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="chart-container">
+                            <h4>構成分析グラフ</h4>
+                            <img id="stacked-chart" class="chart-img" src="" alt="構成分析グラフ">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 資金繰り分析タブ -->
+    <div id="cash-flow-analysis" class="tab-content">
+        <div class="plan-selector">
+            <h3>資金繰り分析</h3>
+            <p>分析したい事業計画を選択してください：</p>
+            
+            {% if business_plans %}
+                <form id="cash-flow-form">
+                    <div class="form-group">
+                        <select class="form-control" id="cash-flow-plan-select">
+                            <option value="">-- 事業計画を選択 --</option>
+                            {% for plan in business_plans %}
+                                <option value="{{ plan.id }}">{{ plan.name }} ({{ plan.fiscal_year }}年度)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary mt-3" onclick="analyzeCashFlow()">資金繰り分析</button>
+                </form>
+            {% else %}
+                <div class="alert alert-warning">
+                    事業計画がありません。まずは事業計画を作成してください。
+                </div>
+            {% endif %}
+        </div>
+        
+        <div id="cash-flow-results" style="display: none;">
+            <div id="cash-flow-loading" class="loading">
+                <p>分析中...</p>
+            </div>
+            
+            <div id="cash-flow-data" style="display: none;">
+                <h4 id="cash-flow-plan-name"></h4>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="chart-container">
+                            <h4>資金繰り推移</h4>
+                            <img id="cash-flow-chart" class="chart-img" src="" alt="資金繰り推移">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="chart-container">
+                            <h4>累積資金残高推移</h4>
+                            <img id="cumulative-chart" class="chart-img" src="" alt="累積資金残高推移">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="cash-flow-tables">
+                    <!-- 月別の資金繰りデータテーブル（JavaScriptで動的に追加） -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// タブ切り替え機能
+function openTab(evt, tabName) {
+    // タブコンテンツをすべて非表示
+    var tabContents = document.getElementsByClassName("tab-content");
+    for (var i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove("active");
+    }
+    
+    // タブボタンのアクティブクラスをすべて削除
+    var tabLinks = document.getElementsByClassName("tab-link");
+    for (var i = 0; i < tabLinks.length; i++) {
+        tabLinks[i].classList.remove("active");
+    }
+    
+    // クリックされたタブを表示してアクティブにする
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
+
+// 事業計画比較機能
+function comparePlans() {
+    // 選択された事業計画IDを取得
+    var planIds = [];
+    var checkboxes = document.querySelectorAll('input[name="plan_ids"]:checked');
+    
+    checkboxes.forEach(function(checkbox) {
+        planIds.push(parseInt(checkbox.value));
+    });
+    
+    if (planIds.length === 0) {
+        alert('比較する事業計画を選択してください');
+        return;
+    }
+    
+    // 結果エリアを表示し、ローディング表示
+    document.getElementById('comparison-results').style.display = 'block';
+    document.getElementById('comparison-loading').style.display = 'block';
+    document.getElementById('comparison-data').style.display = 'none';
+    
+    // APIリクエスト
+    fetch('/analytics/plan-comparison', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ plan_ids: planIds })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('分析中にエラーが発生しました');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // ローディング非表示、データ表示
+        document.getElementById('comparison-loading').style.display = 'none';
+        document.getElementById('comparison-data').style.display = 'block';
+        
+        // テーブルデータを設定
+        var tableBody = document.getElementById('comparison-table-body');
+        tableBody.innerHTML = '';
+        
+        data.comparison_data.forEach(function(item) {
+            var row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td>${item.plan_name}</td>
+                <td>${item.fiscal_year}年度</td>
+                <td>${item.total_sales.toLocaleString()}円</td>
+                <td>${item.total_costs.toLocaleString()}円</td>
+                <td>${item.profit.toLocaleString()}円</td>
+                <td>${item.profit_margin.toFixed(2)}%</td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+        
+        // チャート画像を設定
+        document.getElementById('comparison-chart').src = 'data:image/png;base64,' + data.chart_data.comparison_chart;
+        document.getElementById('margin-chart').src = 'data:image/png;base64,' + data.chart_data.margin_chart;
+    })
+    .catch(error => {
+        document.getElementById('comparison-loading').style.display = 'none';
+        alert('エラー: ' + error.message);
+    });
+}
+
+// 月次トレンド分析機能
+function analyzeTrend() {
+    var planId = document.getElementById('trend-plan-select').value;
+    
+    if (!planId) {
+        alert('事業計画を選択してください');
+        return;
+    }
+    
+    // 結果エリアを表示し、ローディング表示
+    document.getElementById('trend-results').style.display = 'block';
+    document.getElementById('trend-loading').style.display = 'block';
+    document.getElementById('trend-data').style.display = 'none';
+    
+    // APIリクエスト
+    fetch('/analytics/monthly-trend/' + planId)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('分析中にエラーが発生しました');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // ローディング非表示、データ表示
+        document.getElementById('trend-loading').style.display = 'none';
+        document.getElementById('trend-data').style.display = 'block';
+        
+        // プラン名を設定
+        document.getElementById('trend-plan-name').textContent = 
+            data.plan_name + ' (' + data.fiscal_year + '年度) の月次トレンド';
+        
+        // テーブルデータを設定
+        var tableBody = document.getElementById('trend-table-body');
+        tableBody.innerHTML = '';
+        
+        data.monthly_data.forEach(function(item) {
+            var row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td>${item.month}月</td>
+                <td>${item.sales.toLocaleString()}円</td>
+                <td>${item.costs.toLocaleString()}円</td>
+                <td>${item.profit.toLocaleString()}円</td>
+                <td>${item.profit_margin.toFixed(2)}%</td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+        
+        // チャート画像を設定
+        document.getElementById('trend-chart').src = 'data:image/png;base64,' + data.chart_data.trend_chart;
+        document.getElementById('stacked-chart').src = 'data:image/png;base64,' + data.chart_data.stacked_chart;
+    })
+    .catch(error => {
+        document.getElementById('trend-loading').style.display = 'none';
+        alert('エラー: ' + error.message);
+    });
+}
+
+// 資金繰り分析機能
+function analyzeCashFlow() {
+    var planId = document.getElementById('cash-flow-plan-select').value;
+    
+    if (!planId) {
+        alert('事業計画を選択してください');
+        return;
+    }
+    
+    // 結果エリアを表示し、ローディング表示
+    document.getElementById('cash-flow-results').style.display = 'block';
+    document.getElementById('cash-flow-loading').style.display = 'block';
+    document.getElementById('cash-flow-data').style.display = 'none';
+    
+    // APIリクエスト
+    fetch('/analytics/cash-flow-analysis/' + planId)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('分析中にエラーが発生しました');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // ローディング非表示、データ表示
+        document.getElementById('cash-flow-loading').style.display = 'none';
+        document.getElementById('cash-flow-data').style.display = 'block';
+        
+        // プラン名を設定
+        document.getElementById('cash-flow-plan-name').textContent = 
+            data.plan_name + ' (' + data.fiscal_year + '年度) の資金繰り分析';
+        
+        // チャート画像を設定
+        document.getElementById('cash-flow-chart').src = 'data:image/png;base64,' + data.chart_data.cash_flow_chart;
+        document.getElementById('cumulative-chart').src = 'data:image/png;base64,' + data.chart_data.cumulative_chart;
+        
+        // 月別テーブルを生成
+        var tablesContainer = document.getElementById('cash-flow-tables');
+        tablesContainer.innerHTML = '';
+        
+        data.cash_flow_data.forEach(function(monthData) {
+            var monthDiv = document.createElement('div');
+            monthDiv.className = 'mt-4';
+            
+            var monthTitle = document.createElement('h5');
+            monthTitle.textContent = monthData.month + '月の資金繰り詳細';
+            monthDiv.appendChild(monthTitle);
+            
+            var tableResponsive = document.createElement('div');
+            tableResponsive.className = 'table-responsive';
+            
+            var table = document.createElement('table');
+            table.className = 'data-table';
+            
+            var thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>日付</th>
+                    <th>収入</th>
+                    <th>支出</th>
+                    <th>残高</th>
+                </tr>
+            `;
+            
+            var tbody = document.createElement('tbody');
+            
+            monthData.date_data.forEach(function(dateData) {
+                var row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${dateData.date}</td>
+                    <td>${dateData.income.toLocaleString()}円</td>
+                    <td>${dateData.expense.toLocaleString()}円</td>
+                    <td>${dateData.balance.toLocaleString()}円</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            tableResponsive.appendChild(table);
+            monthDiv.appendChild(tableResponsive);
+            
+            tablesContainer.appendChild(monthDiv);
+        });
+    })
+    .catch(error => {
+        document.getElementById('cash-flow-loading').style.display = 'none';
+        alert('エラー: ' + error.message);
+    });
+}
+</script>
+{% endblock %} 

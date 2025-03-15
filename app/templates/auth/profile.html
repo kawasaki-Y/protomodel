@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}マイプロフィール | 事業計画システム{% endblock %}
+
+{% block page_title %}マイプロフィール{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-8 mb-16">
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-md {% if category == 'danger' %}bg-red-100 text-red-700{% elif category == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">アカウント情報</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-gray-600 mb-1">ユーザー名</p>
+                    <p class="text-lg font-medium">{{ current_user.username }}</p>
+                </div>
+                
+                <div>
+                    <p class="text-gray-600 mb-1">メールアドレス</p>
+                    <p class="text-lg font-medium">{{ current_user.email }}</p>
+                </div>
+                
+                <div>
+                    <p class="text-gray-600 mb-1">アカウント作成日</p>
+                    <p class="text-lg font-medium">{{ current_user.created_at.strftime('%Y年%m月%d日') }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="border-t pt-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">あなたの事業計画</h3>
+            
+            {% if current_user.business_plans.count() > 0 %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">計画名</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">会計年度</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">種類</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">作成日</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for plan in current_user.business_plans %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.name }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.fiscal_year }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700 border">
+                                {% if plan.plan_type == 'current' %}
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">単年</span>
+                                {% else %}
+                                <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">来期</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.created_at.strftime('%Y/%m/%d') }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700 border">
+                                <a href="{{ url_for('business_plan.view_plan', plan_id=plan.id) }}" class="text-blue-600 hover:underline">表示</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-600">まだ事業計画を作成していません。</p>
+            <div class="mt-4">
+                <a href="{{ url_for('business_plan.create_plan') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+                    事業計画を作成
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

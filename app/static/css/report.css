@@ -1,0 +1,131 @@
+/* PDF出力用のスタイル */
+body {
+    font-family: "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    line-height: 1.6;
+}
+
+.report-container {
+    max-width: 210mm; /* A4サイズ */
+    margin: 0 auto;
+    padding: 20mm 15mm;
+}
+
+.report-header {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10mm;
+    margin-bottom: 10mm;
+    text-align: center;
+}
+
+.report-title {
+    font-size: 24pt;
+    font-weight: bold;
+    margin-bottom: 5mm;
+    color: #2c3e50;
+}
+
+.report-subtitle {
+    font-size: 16pt;
+    color: #7f8c8d;
+    margin-bottom: 5mm;
+}
+
+.report-date {
+    font-size: 12pt;
+    color: #95a5a6;
+}
+
+.report-section {
+    margin-bottom: 15mm;
+}
+
+.section-title {
+    font-size: 18pt;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 3mm;
+    margin-bottom: 5mm;
+}
+
+.section-content {
+    font-size: 11pt;
+}
+
+table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10mm 0;
+}
+
+table.data-table th {
+    background-color: #f2f2f2;
+    border: 1px solid #ddd;
+    padding: 2mm;
+    text-align: center;
+    font-weight: bold;
+}
+
+table.data-table td {
+    border: 1px solid #ddd;
+    padding: 2mm;
+    text-align: right;
+}
+
+table.data-table td.item-name {
+    text-align: left;
+    font-weight: bold;
+}
+
+table.data-table tr.header {
+    background-color: #eef2f7;
+}
+
+table.data-table tr.total {
+    background-color: #e8f4fc;
+    font-weight: bold;
+}
+
+.cash-flow-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10mm 0;
+}
+
+.cash-flow-table th,
+.cash-flow-table td {
+    border: 1px solid #ddd;
+    padding: 2mm;
+}
+
+.cash-flow-table th {
+    background-color: #f2f2f2;
+    text-align: center;
+}
+
+.cash-flow-table td.item-name {
+    text-align: left;
+}
+
+.report-footer {
+    margin-top: 15mm;
+    border-top: 1px solid #ddd;
+    padding-top: 5mm;
+    font-size: 10pt;
+    color: #95a5a6;
+    text-align: center;
+}
+
+@page {
+    size: A4;
+    margin: 0;
+}
+
+@media print {
+    .report-container {
+        width: 210mm;
+        height: 297mm;
+    }
+} 
