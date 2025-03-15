@@ -7,43 +7,61 @@ from flask_login import UserMixin
 db = SQLAlchemy()
 
 class BusinessPlan(db.Model):
-    """事業計画モデル（単年・来期）"""
+    """
+    事業計画モデル
+    """
     __tablename__ = 'business_plans'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    plan_type = db.Column(db.String(20), nullable=False)  # 'current' または 'next'
-    fiscal_year = db.Column(db.Integer, nullable=False)
-    start_month = db.Column(db.Integer, nullable=False)  # 期初月（1-12）
-    end_month = db.Column(db.Integer, nullable=False)    # 期末月（1-12）
-    description = db.Column(db.Text, nullable=True)  # 事業計画の概要説明
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 作成者
+    year = db.Column(db.String(10), nullable=False)  # 年度（例：2023）
+    start_month = db.Column(db.String(7), nullable=False)  # 期初月（例：2023-01）
+    end_month = db.Column(db.String(7), nullable=False)  # 期末月（例：2023-12）
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # リレーションシップ
-    items = relationship('PlanItem', back_populates='business_plan', cascade='all, delete-orphan')
+    # リレーションシップ - Userへのバックリファレンスを削除
+    user = db.relationship('User')
+    items = db.relationship('BusinessPlanItem', backref='business_plan', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f'<BusinessPlan {self.name}>'
+        return f'<BusinessPlan {self.year}>'
+    
+    @property
+    def months(self):
+        """
+        事業計画の対象月を配列で返す
+        """
+        from dateutil.parser import parse
+        from dateutil.relativedelta import relativedelta
+        
+        start = parse(self.start_month + "-01")
+        end = parse(self.end_month + "-01")
+        result = []
+        
+        current = start
+        while current <= end:
+            result.append(current.strftime('%Y-%m'))
+            current += relativedelta(months=1)
+            
+        return result
 
-
-class PlanItem(db.Model):
-    """事業計画項目モデル（階層構造）"""
-    __tablename__ = 'plan_items'
+class BusinessPlanItem(db.Model):
+    """
+    事業計画項目モデル
+    """
+    __tablename__ = 'business_plan_items'
     
     id = db.Column(db.Integer, primary_key=True)
     business_plan_id = db.Column(db.Integer, db.ForeignKey('business_plans.id'), nullable=False)
-    parent_id = db.Column(db.Integer, db.ForeignKey('plan_items.id'), nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('business_plan_items.id'), nullable=True)
+    category = db.Column(db.String(50), nullable=False)  # カテゴリ（収益、費用など）
+    item_type = db.Column(db.String(20), nullable=False)  # タイプ（親項目、子項目）
+    name = db.Column(db.String(100), nullable=False)  # 項目名
+    description = db.Column(db.Text, nullable=True)  # 説明
+    sort_order = db.Column(db.Integer, default=0)  # 表示順
     
-    # 項目情報
-    category = db.Column(db.String(50), nullable=False)  # 売上/原価/販管費/営業外収支 など
-    item_type = db.Column(db.String(20), nullable=False)  # 'header'(見出し) または 'detail'(詳細)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    sort_order = db.Column(db.Integer, default=0)
-    
-    # 金額情報（月別） - 月ごとに別カラム
+    # 月別金額（各月のカラムを用意）
     m1_amount = db.Column(db.Integer, default=0)
     m2_amount = db.Column(db.Integer, default=0)
     m3_amount = db.Column(db.Integer, default=0)
@@ -57,25 +75,74 @@ class PlanItem(db.Model):
     m11_amount = db.Column(db.Integer, default=0)
     m12_amount = db.Column(db.Integer, default=0)
     
-    # 合計値
-    total_amount = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # リレーションシップ
-    business_plan = relationship('BusinessPlan', back_populates='items')
-    children = relationship('PlanItem', 
-                           backref=backref('parent', remote_side=[id]),
-                           cascade='all, delete-orphan')
-    # 実績データとのリレーションシップを追加
-    actual_data = relationship('ActualData', back_populates='plan_item', cascade='all, delete-orphan')
-    
-    def get_amount_for_month(self, month):
-        """指定された月の金額を取得する"""
-        if 1 <= month <= 12:
-            return getattr(self, f'm{month}_amount', 0)
-        return 0
+    parent = db.relationship('BusinessPlanItem', backref=db.backref('children', lazy=True), 
+                             remote_side=[id], foreign_keys=[parent_id])
+    actual_data = db.relationship('ActualData', back_populates='plan_item', lazy=True)
     
     def __repr__(self):
-        return f'<PlanItem {self.name}>'
+        return f'<BusinessPlanItem {self.name}>'
+    
+    @property
+    def total_amount(self):
+        """
+        年間合計金額を返す
+        """
+        return (self.m1_amount + self.m2_amount + self.m3_amount + self.m4_amount + 
+                self.m5_amount + self.m6_amount + self.m7_amount + self.m8_amount + 
+                self.m9_amount + self.m10_amount + self.m11_amount + self.m12_amount)
+    
+    def get_month_amount(self, month_index):
+        """
+        指定された月のインデックス（1〜12）に対応する金額を返す
+        """
+        month_amounts = {
+            1: self.m1_amount,
+            2: self.m2_amount,
+            3: self.m3_amount,
+            4: self.m4_amount,
+            5: self.m5_amount,
+            6: self.m6_amount,
+            7: self.m7_amount,
+            8: self.m8_amount,
+            9: self.m9_amount,
+            10: self.m10_amount,
+            11: self.m11_amount,
+            12: self.m12_amount
+        }
+        return month_amounts.get(month_index, 0)
+    
+    def set_month_amount(self, month_index, value):
+        """
+        指定された月のインデックス（1〜12）に対応する金額を設定
+        """
+        if month_index == 1:
+            self.m1_amount = value
+        elif month_index == 2:
+            self.m2_amount = value
+        elif month_index == 3:
+            self.m3_amount = value
+        elif month_index == 4:
+            self.m4_amount = value
+        elif month_index == 5:
+            self.m5_amount = value
+        elif month_index == 6:
+            self.m6_amount = value
+        elif month_index == 7:
+            self.m7_amount = value
+        elif month_index == 8:
+            self.m8_amount = value
+        elif month_index == 9:
+            self.m9_amount = value
+        elif month_index == 10:
+            self.m10_amount = value
+        elif month_index == 11:
+            self.m11_amount = value
+        elif month_index == 12:
+            self.m12_amount = value
 
 
 class CashFlowPlan(db.Model):
@@ -104,7 +171,7 @@ class CashFlowItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cash_flow_plan_id = db.Column(db.Integer, db.ForeignKey('cash_flow_plans.id'), nullable=False)
     parent_id = db.Column(db.Integer, db.ForeignKey('cash_flow_items.id'), nullable=True)
-    related_plan_item_id = db.Column(db.Integer, db.ForeignKey('plan_items.id'), nullable=True)
+    related_plan_item_id = db.Column(db.Integer, db.ForeignKey('business_plan_items.id'), nullable=True)
     
     # 項目情報
     category = db.Column(db.String(50), nullable=False)  # 営業収入/営業支出/財務活動 など
@@ -141,7 +208,7 @@ class CashFlowItem(db.Model):
     # リレーションシップ
     cash_flow_plan = relationship('CashFlowPlan', back_populates='items')
     children = relationship('CashFlowItem', backref=backref('parent', remote_side=[id]), cascade='all, delete-orphan')
-    related_plan_item = relationship('PlanItem', backref='cash_flow_items')
+    related_plan_item = relationship('BusinessPlanItem', backref='cash_flow_items')
     
     def __repr__(self):
         return f'<CashFlowItem {self.name}>'
@@ -216,7 +283,7 @@ class ActualData(db.Model):
     __tablename__ = 'actual_data'
     
     id = db.Column(db.Integer, primary_key=True)
-    plan_item_id = db.Column(db.Integer, db.ForeignKey('plan_items.id'), nullable=False)
+    plan_item_id = db.Column(db.Integer, db.ForeignKey('business_plan_items.id'), nullable=False)
     month = db.Column(db.Integer, nullable=False)  # 1-12の月
     amount = db.Column(db.Integer, default=0)  # 実績金額
     notes = db.Column(db.Text, nullable=True)  # メモ
@@ -224,7 +291,7 @@ class ActualData(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # リレーションシップ
-    plan_item = relationship('PlanItem', back_populates='actual_data')
+    plan_item = relationship('BusinessPlanItem', back_populates='actual_data')
     
     def __repr__(self):
         return f'<ActualData for {self.plan_item.name} Month:{self.month}>'
@@ -242,3 +309,20 @@ class ActualData(db.Model):
         if plan_amount == 0:
             return 0 if self.amount == 0 else float('inf')
         return (self.amount - plan_amount) / abs(plan_amount) * 100 
+
+
+class AccountItem(db.Model):
+    """勘定科目モデル（損益計算書科目など）"""
+    __tablename__ = 'account_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(10), unique=True, nullable=False)  # 科目コード
+    name = db.Column(db.String(100), nullable=False)  # 科目名
+    category = db.Column(db.String(50), nullable=False)  # 要素: 収益/費用
+    sub_category = db.Column(db.String(50), nullable=False)  # 区分: 売上高、売上原価、販管費など
+    display_order = db.Column(db.Integer, default=0)  # 表示順
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<AccountItem {self.code}: {self.name}>' 

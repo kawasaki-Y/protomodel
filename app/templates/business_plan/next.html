@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block page_title %}次年度計画{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- ヘッダー部分 -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">次年度計画</h1>
+        <div class="flex space-x-2">
+            <button id="save-plan-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">
+                <i class="fas fa-save mr-2"></i>計画を保存
+            </button>
+            <button id="print-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow">
+                <i class="fas fa-print mr-2"></i>印刷
+            </button>
+        </div>
+    </div>
+
+    <!-- 次年度計画作成フォーム -->
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">次年度計画の作成</h2>
+        <p class="text-gray-600 mb-6">
+            現在の事業計画を基に、次年度の計画を作成します。<br>
+            成長率を設定して、次年度の予測数値を自動計算できます。
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-md font-medium text-gray-700 mb-2">現在の事業計画</h3>
+                <div id="current-plan-info" class="text-gray-600">
+                    <p>事業計画: <span id="current-plan-year" class="font-medium text-gray-800">-</span></p>
+                    <p>売上計画: <span id="current-plan-sales" class="font-medium text-gray-800">-</span>円</p>
+                    <p>利益計画: <span id="current-plan-profit" class="font-medium text-gray-800">-</span>円</p>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-md font-medium text-gray-700 mb-2">成長率設定</h3>
+                <div class="mb-4">
+                    <label for="sales-growth" class="block text-sm font-medium text-gray-700 mb-1">売上成長率 (%)</label>
+                    <div class="flex items-center">
+                        <input type="number" id="sales-growth" class="w-24 px-3 py-2 border border-gray-300 rounded-md mr-2" value="5">
+                        <button id="apply-sales-growth" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="cost-growth" class="block text-sm font-medium text-gray-700 mb-1">費用成長率 (%)</label>
+                    <div class="flex items-center">
+                        <input type="number" id="cost-growth" class="w-24 px-3 py-2 border border-gray-300 rounded-md mr-2" value="3">
+                        <button id="apply-cost-growth" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+                <button id="apply-all-growth" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sync-alt mr-2"></i>すべて適用
+                </button>
+            </div>
+        </div>
+
+        <!-- 次年度計画の詳細 -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left w-1/4">科目</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right">現在の年間計画</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right">次年度計画</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right">成長率 (%)</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right">増減額</th>
+                    </tr>
+                </thead>
+                <tbody id="next-plan-table-body">
+                    <!-- JavaScript で動的に生成 -->
+                    <tr>
+                        <td colspan="5" class="py-4 px-4 text-center text-gray-500">
+                            現在の事業計画を取得中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ボタンの参照
+    const savePlanBtn = document.getElementById('save-plan-btn');
+    const printBtn = document.getElementById('print-btn');
+    const applySalesGrowthBtn = document.getElementById('apply-sales-growth');
+    const applyCostGrowthBtn = document.getElementById('apply-cost-growth');
+    const applyAllGrowthBtn = document.getElementById('apply-all-growth');
+    
+    // 入力フィールド
+    const salesGrowthInput = document.getElementById('sales-growth');
+    const costGrowthInput = document.getElementById('cost-growth');
+    
+    // テーブル本体
+    const tableBody = document.getElementById('next-plan-table-body');
+    
+    // 事業計画データ
+    let currentPlanData = null;
+    let nextPlanData = {
+        items: []
+    };
+    
+    // 現在の事業計画を取得
+    fetchCurrentPlan();
+    
+    // ボタンイベントの設定
+    if (applySalesGrowthBtn) {
+        applySalesGrowthBtn.addEventListener('click', function() {
+            const rate = parseFloat(salesGrowthInput.value) || 0;
+            applyGrowthRate('収益', rate);
+        });
+    }
+    
+    if (applyCostGrowthBtn) {
+        applyCostGrowthBtn.addEventListener('click', function() {
+            const rate = parseFloat(costGrowthInput.value) || 0;
+            applyGrowthRate('費用', rate);
+        });
+    }
+    
+    if (applyAllGrowthBtn) {
+        applyAllGrowthBtn.addEventListener('click', function() {
+            const salesRate = parseFloat(salesGrowthInput.value) || 0;
+            const costRate = parseFloat(costGrowthInput.value) || 0;
+            
+            applyGrowthRate('収益', salesRate);
+            applyGrowthRate('費用', costRate);
+        });
+    }
+    
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+    }
+    
+    if (savePlanBtn) {
+        savePlanBtn.addEventListener('click', function() {
+            alert('この機能は現在開発中です。次のアップデートをお待ちください。');
+        });
+    }
+    
+    // 現在の事業計画を取得する関数
+    function fetchCurrentPlan() {
+        // 現在の事業計画の基本情報を取得
+        fetch('/business-plan/api/current-plan')
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // 事業計画が存在する場合、計画の詳細情報を取得
+                    updateCurrentPlanInfo(data);
+                    fetchPlanItems();
+                } else {
+                    // 事業計画がない場合、メッセージを表示
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-4 px-4 text-center text-gray-500">
+                                現在の事業計画が見つかりません。<br>
+                                <a href="${window.location.origin}/business-plan/current" class="text-blue-500 hover:underline">
+                                    事業計画を作成
+                                </a>
+                                してから、次年度計画を作成してください。
+                            </td>
+                        </tr>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('事業計画の取得に失敗しました:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-4 px-4 text-center text-red-500">
+                            事業計画の取得中にエラーが発生しました。
+                        </td>
+                    </tr>
+                `;
+            });
+    }
+    
+    // 事業計画の項目を取得する関数
+    function fetchPlanItems() {
+        fetch('/business-plan/api/plan-items')
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // データを保存
+                    currentPlanData = data;
+                    
+                    // 次年度計画の初期データを生成
+                    initializeNextPlanData(data.items);
+                    
+                    // 計画を表示
+                    renderNextPlanTable();
+                }
+            })
+            .catch(error => {
+                console.error('事業計画項目の取得に失敗しました:', error);
+            });
+    }
+    
+    // 現在の事業計画情報を表示する関数
+    function updateCurrentPlanInfo(planData) {
+        document.getElementById('current-plan-year').textContent = planData.year;
+    }
+    
+    // 次年度計画の初期データを生成する関数
+    function initializeNextPlanData(items) {
+        nextPlanData.items = [];
+        
+        // 各項目を処理
+        items.forEach(category => {
+            // 親項目を次年度計画に追加
+            const nextCategory = {
+                id: category.id,
+                name: category.name,
+                category: category.category,
+                item_type: category.item_type,
+                sort_order: category.sort_order,
+                current_total: category.amounts.total,
+                next_total: category.amounts.total,
+                growth_rate: 0,
+                difference: 0,
+                children: []
+            };
+            
+            // 子項目を処理
+            category.children.forEach(child => {
+                nextCategory.children.push({
+                    id: child.id,
+                    name: child.name,
+                    category: child.category,
+                    item_type: child.item_type,
+                    sort_order: child.sort_order,
+                    current_total: child.amounts.total,
+                    next_total: child.amounts.total,
+                    growth_rate: 0,
+                    difference: 0
+                });
+            });
+            
+            nextPlanData.items.push(nextCategory);
+        });
+        
+        // 売上と利益の合計を計算して表示
+        calculateTotals();
+    }
+    
+    // 次年度計画テーブルを表示する関数
+    function renderNextPlanTable() {
+        tableBody.innerHTML = '';
+        
+        // 各カテゴリ（親項目）を処理
+        nextPlanData.items.forEach(category => {
+            // カテゴリ行（親項目）
+            const categoryRow = document.createElement('tr');
+            categoryRow.className = 'bg-gray-50';
+            
+            const categoryNameCell = document.createElement('td');
+            categoryNameCell.className = 'py-3 px-4 font-semibold text-gray-800 border-b border-gray-200';
+            categoryNameCell.textContent = category.name;
+            categoryRow.appendChild(categoryNameCell);
+            
+            const categoryCurrTotalCell = document.createElement('td');
+            categoryCurrTotalCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
+            categoryCurrTotalCell.textContent = formatCurrency(category.current_total);
+            categoryRow.appendChild(categoryCurrTotalCell);
+            
+            const categoryNextTotalCell = document.createElement('td');
+            categoryNextTotalCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
+            
+            const categoryNextTotalInput = document.createElement('input');
+            categoryNextTotalInput.type = 'number';
+            categoryNextTotalInput.className = 'w-32 text-right px-2 py-1 border border-gray-300 rounded font-semibold';
+            categoryNextTotalInput.value = category.next_total;
+            categoryNextTotalInput.dataset.categoryId = category.id;
+            categoryNextTotalInput.dataset.isCategory = 'true';
+            categoryNextTotalInput.addEventListener('change', handleAmountChange);
+            categoryNextTotalCell.appendChild(categoryNextTotalInput);
+            
+            categoryRow.appendChild(categoryNextTotalCell);
+            
+            const categoryGrowthCell = document.createElement('td');
+            categoryGrowthCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
+            categoryGrowthCell.textContent = formatGrowthRate(category.growth_rate);
+            categoryRow.appendChild(categoryGrowthCell);
+            
+            const categoryDiffCell = document.createElement('td');
+            categoryDiffCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
+            categoryDiffCell.textContent = formatCurrency(category.difference);
+            categoryRow.appendChild(categoryDiffCell);
+            
+            tableBody.appendChild(categoryRow);
+            
+            // 子項目行
+            category.children.forEach(child => {
+                const childRow = document.createElement('tr');
+                
+                const childNameCell = document.createElement('td');
+                childNameCell.className = 'py-3 px-4 pl-8 text-gray-700 border-b border-gray-200';
+                childNameCell.textContent = child.name;
+                childRow.appendChild(childNameCell);
+                
+                const childCurrTotalCell = document.createElement('td');
+                childCurrTotalCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
+                childCurrTotalCell.textContent = formatCurrency(child.current_total);
+                childRow.appendChild(childCurrTotalCell);
+                
+                const childNextTotalCell = document.createElement('td');
+                childNextTotalCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
+                
+                const childNextTotalInput = document.createElement('input');
+                childNextTotalInput.type = 'number';
+                childNextTotalInput.className = 'w-32 text-right px-2 py-1 border border-gray-300 rounded';
+                childNextTotalInput.value = child.next_total;
+                childNextTotalInput.dataset.itemId = child.id;
+                childNextTotalInput.dataset.categoryId = category.id;
+                childNextTotalInput.addEventListener('change', handleAmountChange);
+                childNextTotalCell.appendChild(childNextTotalInput);
+                
+                childRow.appendChild(childNextTotalCell);
+                
+                const childGrowthCell = document.createElement('td');
+                childGrowthCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
+                childGrowthCell.textContent = formatGrowthRate(child.growth_rate);
+                childRow.appendChild(childGrowthCell);
+                
+                const childDiffCell = document.createElement('td');
+                childDiffCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
+                childDiffCell.textContent = formatCurrency(child.difference);
+                childRow.appendChild(childDiffCell);
+                
+                tableBody.appendChild(childRow);
+            });
+        });
+    }
+    
+    // 金額変更時の処理
+    function handleAmountChange(event) {
+        const input = event.target;
+        const newValue = parseInt(input.value) || 0;
+        
+        if (input.dataset.isCategory === 'true') {
+            // 親項目の場合
+            const categoryId = input.dataset.categoryId;
+            const category = nextPlanData.items.find(item => item.id == categoryId);
+            
+            if (category) {
+                category.next_total = newValue;
+                category.difference = newValue - category.current_total;
+                category.growth_rate = calculateGrowthRate(category.current_total, newValue);
+                
+                // 子項目に成長率を均等に適用
+                const totalChildrenCount = category.children.length;
+                if (totalChildrenCount > 0) {
+                    category.children.forEach(child => {
+                        child.growth_rate = category.growth_rate;
+                        child.next_total = Math.round(child.current_total * (1 + child.growth_rate / 100));
+                        child.difference = child.next_total - child.current_total;
+                    });
+                }
+            }
+        } else {
+            // 子項目の場合
+            const itemId = input.dataset.itemId;
+            const categoryId = input.dataset.categoryId;
+            const category = nextPlanData.items.find(item => item.id == categoryId);
+            
+            if (category) {
+                const child = category.children.find(child => child.id == itemId);
+                
+                if (child) {
+                    child.next_total = newValue;
+                    child.difference = newValue - child.current_total;
+                    child.growth_rate = calculateGrowthRate(child.current_total, newValue);
+                    
+                    // 親項目の合計を再計算
+                    updateCategoryTotal(category);
+                }
+            }
+        }
+        
+        // 表示を更新
+        renderNextPlanTable();
+        calculateTotals();
+    }
+    
+    // 親項目の合計を更新
+    function updateCategoryTotal(category) {
+        let totalAmount = 0;
+        category.children.forEach(child => {
+            totalAmount += child.next_total;
+        });
+        
+        category.next_total = totalAmount;
+        category.difference = totalAmount - category.current_total;
+        category.growth_rate = calculateGrowthRate(category.current_total, totalAmount);
+    }
+    
+    // 成長率を適用する関数
+    function applyGrowthRate(categoryType, rate) {
+        nextPlanData.items.forEach(category => {
+            if (category.category === categoryType) {
+                // 親項目に成長率を適用
+                category.growth_rate = rate;
+                category.next_total = Math.round(category.current_total * (1 + rate / 100));
+                category.difference = category.next_total - category.current_total;
+                
+                // 子項目に成長率を適用
+                category.children.forEach(child => {
+                    child.growth_rate = rate;
+                    child.next_total = Math.round(child.current_total * (1 + rate / 100));
+                    child.difference = child.next_total - child.current_total;
+                });
+            }
+        });
+        
+        // 表示を更新
+        renderNextPlanTable();
+        calculateTotals();
+    }
+    
+    // 売上と利益の合計を計算して表示
+    function calculateTotals() {
+        let totalSales = 0;
+        let totalProfit = 0;
+        
+        // 収益カテゴリの合計を計算
+        nextPlanData.items.forEach(category => {
+            if (category.category === '収益') {
+                totalSales += category.next_total;
+            }
+        });
+        
+        // 簡易的な利益計算（収益 - 費用）
+        let totalExpenses = 0;
+        nextPlanData.items.forEach(category => {
+            if (category.category === '費用') {
+                totalExpenses += category.next_total;
+            }
+        });
+        
+        totalProfit = totalSales - totalExpenses;
+        
+        // 現在の計画の売上と利益を表示
+        let currentSales = 0;
+        let currentProfit = 0;
+        
+        if (currentPlanData) {
+            // 現在の収益カテゴリの合計を計算
+            currentPlanData.items.forEach(category => {
+                if (category.category === '収益') {
+                    currentSales += category.amounts.total;
+                }
+            });
+            
+            // 現在の費用カテゴリの合計を計算
+            let currentExpenses = 0;
+            currentPlanData.items.forEach(category => {
+                if (category.category === '費用') {
+                    currentExpenses += category.amounts.total;
+                }
+            });
+            
+            currentProfit = currentSales - currentExpenses;
+        }
+        
+        // 表示を更新
+        document.getElementById('current-plan-sales').textContent = formatCurrency(currentSales);
+        document.getElementById('current-plan-profit').textContent = formatCurrency(currentProfit);
+    }
+    
+    // 成長率を計算する関数
+    function calculateGrowthRate(currentValue, nextValue) {
+        if (currentValue === 0) return 0;
+        return ((nextValue - currentValue) / currentValue) * 100;
+    }
+    
+    // 成長率のフォーマット関数
+    function formatGrowthRate(rate) {
+        return rate.toFixed(1) + '%';
+    }
+    
+    // 通貨フォーマット関数
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('ja-JP').format(value);
+    }
+});
+</script>
+{% endblock %} 

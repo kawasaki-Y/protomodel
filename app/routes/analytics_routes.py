@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify, current_app
-from app.models.models import BusinessPlan, PlanItem, CashFlowPlan, CashFlowItem
+from app.models.models import BusinessPlan, BusinessPlanItem, CashFlowPlan, CashFlowItem
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
@@ -45,13 +45,13 @@ def plan_comparison():
     comparison_data = []
     for plan in plans:
         # 売上項目の取得
-        sales_items = PlanItem.query.filter_by(
+        sales_items = BusinessPlanItem.query.filter_by(
             business_plan_id=plan.id,
             category='売上'
         ).all()
         
         # 費用項目の取得
-        cost_items = PlanItem.query.filter_by(
+        cost_items = BusinessPlanItem.query.filter_by(
             business_plan_id=plan.id,
             category='費用'
         ).all()
@@ -105,13 +105,13 @@ def monthly_trend(plan_id):
         return jsonify({'error': '指定された事業計画が見つかりません'}), 404
     
     # 売上項目の取得
-    sales_items = PlanItem.query.filter_by(
+    sales_items = BusinessPlanItem.query.filter_by(
         business_plan_id=plan_id,
         category='売上'
     ).all()
     
     # 費用項目の取得
-    cost_items = PlanItem.query.filter_by(
+    cost_items = BusinessPlanItem.query.filter_by(
         business_plan_id=plan_id,
         category='費用'
     ).all()

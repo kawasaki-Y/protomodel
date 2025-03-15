@@ -1,72 +1,119 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
-from app.models.models import db, BusinessPlan, CashFlowPlan, CashFlowItem, PlanItem
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from app.models.models import db, BusinessPlan, BusinessPlanItem, CashFlowPlan, CashFlowItem
 from flask_login import login_required, current_user
+from datetime import datetime
 import json
 
 cash_flow_bp = Blueprint('cash_flow', __name__, url_prefix='/cash-flow')
 
 @cash_flow_bp.route('/')
 @login_required
-def cash_flow():
-    """資金繰り計画画面"""
-    # 直近の単年事業計画とそれに紐づく資金繰り計画を取得
-    business_plan = BusinessPlan.query.filter_by(plan_type='current').order_by(BusinessPlan.created_at.desc()).first()
+def index():
+    """資金繰り計画一覧"""
+    # ユーザーに関連する事業計画を取得
+    business_plans = BusinessPlan.query.filter_by(user_id=current_user.id).all()
+    # 資金繰り計画一覧を取得
+    cash_flow_plans = CashFlowPlan.query.filter(
+        CashFlowPlan.business_plan_id.in_([bp.id for bp in business_plans])
+    ).all() if business_plans else []
     
-    if not business_plan:
-        # 事業計画がない場合は、事業計画の作成を促す
-        return render_template('cash_flow/no_business_plan.html')
-    
-    # 資金繰り計画を取得（なければ作成）
-    cash_flow_plan = CashFlowPlan.query.filter_by(business_plan_id=business_plan.id).first()
-    if not cash_flow_plan:
-        # 資金繰り計画を新規作成
-        cash_flow_plan = CashFlowPlan(
-            business_plan_id=business_plan.id,
-            name=f"{business_plan.name}の資金繰り計画",
-            fiscal_year=business_plan.fiscal_year
+    return render_template('cash_flow/index.html', cash_flow_plans=cash_flow_plans, business_plans=business_plans)
+
+@cash_flow_bp.route('/create', methods=['GET', 'POST'])
+@login_required
+def create():
+    """資金繰り計画作成"""
+    if request.method == 'POST':
+        data = request.form
+        business_plan_id = data.get('business_plan_id')
+        name = data.get('name')
+        
+        # 新しい資金繰り計画を作成
+        new_plan = CashFlowPlan(
+            business_plan_id=business_plan_id,
+            name=name,
+            fiscal_year=datetime.now().year
         )
-        db.session.add(cash_flow_plan)
+        db.session.add(new_plan)
         db.session.commit()
         
-        # 初期項目を作成
-        create_default_cash_flow_items(cash_flow_plan.id, business_plan.id)
+        return redirect(url_for('cash_flow.view', plan_id=new_plan.id))
     
-    # ルート項目（親項目）を取得
-    root_items = CashFlowItem.query.filter_by(cash_flow_plan_id=cash_flow_plan.id, parent_id=None).order_by(CashFlowItem.sort_order).all()
+    # GETの場合は作成フォームを表示
+    # 関連する事業計画の一覧を取得
+    business_plans = BusinessPlan.query.filter_by(user_id=current_user.id).all()
     
-    # 月の表示ラベルを作成（5日区切り）
-    months_days = []
-    labels = ["5日", "10日", "15日", "20日", "25日", "末日"]
-    
-    month_num = business_plan.start_month
-    for _ in range(12):  # 12ヶ月分
-        for label in labels:
-            months_days.append(f"{month_num}月{label}")
-        month_num = (month_num % 12) + 1
-    
-    # 関連事業計画項目のデータを取得
-    plan_items = PlanItem.query.filter_by(business_plan_id=business_plan.id).all()
-    plan_items_data = []
-    for item in plan_items:
-        plan_items_data.append({
-            'id': item.id,
-            'name': item.name,
-            'category': item.category
-        })
-    plan_items_json = json.dumps(plan_items_data)
-    
-    return render_template('cash_flow/view.html', 
-                          business_plan=business_plan,
-                          cash_flow_plan=cash_flow_plan,
-                          root_items=root_items,
-                          months_days=months_days,
-                          plan_items_json=plan_items_json)
+    return render_template('cash_flow/create.html', business_plans=business_plans)
 
-@cash_flow_bp.route('/item/<int:item_id>', methods=['GET'])
+@cash_flow_bp.route('/<int:plan_id>')
+@login_required
+def view(plan_id):
+    """資金繰り計画詳細表示"""
+    plan = CashFlowPlan.query.get_or_404(plan_id)
+    
+    # アクセス権確認
+    if plan.business_plan and plan.business_plan.user_id != current_user.id:
+        flash('このプランへのアクセス権がありません', 'danger')
+        return redirect(url_for('cash_flow.index'))
+    
+    root_items = CashFlowItem.query.filter_by(
+        cash_flow_plan_id=plan_id, 
+        parent_id=None
+    ).order_by(CashFlowItem.sort_order).all()
+    
+    return render_template('cash_flow/view.html', plan=plan, root_items=root_items)
+
+@cash_flow_bp.route('/api/items/<int:plan_id>')
+@login_required
+def get_items(plan_id):
+    """資金繰り計画項目を取得するAPI"""
+    # アクセス権確認
+    plan = CashFlowPlan.query.get_or_404(plan_id)
+    if plan.business_plan and plan.business_plan.user_id != current_user.id:
+        return jsonify({'error': 'アクセス権がありません'}), 403
+    
+    root_items = CashFlowItem.query.filter_by(
+        cash_flow_plan_id=plan_id, 
+        parent_id=None
+    ).order_by(CashFlowItem.sort_order).all()
+    
+    items_data = []
+    for root in root_items:
+        item_data = {
+            'id': root.id,
+            'name': root.name,
+            'category': root.category,
+            'type': root.item_type,
+            'sort_order': root.sort_order,
+            'children': []
+        }
+        
+        # 子項目を追加
+        children = CashFlowItem.query.filter_by(parent_id=root.id).order_by(CashFlowItem.sort_order).all()
+        for child in children:
+            child_data = {
+                'id': child.id,
+                'name': child.name,
+                'category': child.category,
+                'type': child.item_type,
+                'sort_order': child.sort_order
+            }
+            item_data['children'].append(child_data)
+        
+        items_data.append(item_data)
+    
+    return jsonify(items_data)
+
+@cash_flow_bp.route('/api/item/<int:item_id>', methods=['GET'])
 @login_required
 def get_item(item_id):
     """資金繰り計画項目の取得"""
     item = CashFlowItem.query.get_or_404(item_id)
+    
+    # アクセス権確認
+    plan = CashFlowPlan.query.get(item.cash_flow_plan_id)
+    if plan.business_plan and plan.business_plan.user_id != current_user.id:
+        return jsonify({'error': 'アクセス権がありません'}), 403
     
     # 項目の詳細情報をJSON形式で返す
     item_data = {
@@ -75,41 +122,25 @@ def get_item(item_id):
         'category': item.category,
         'item_type': item.item_type,
         'description': item.description,
-        'parent_id': item.parent_id,
-        'related_plan_item_id': item.related_plan_item_id,
-        # 1月の金額
-        'm1': {
-            'd5': item.m1_d5,
-            'd10': item.m1_d10,
-            'd15': item.m1_d15,
-            'd20': item.m1_d20,
-            'd25': item.m1_d25,
-            'end': item.m1_end
-        },
-        # 2月の金額
-        'm2': {
-            'd5': item.m2_d5,
-            'd10': item.m2_d10,
-            'd15': item.m2_d15,
-            'd20': item.m2_d20,
-            'd25': item.m2_d25,
-            'end': item.m2_end
-        }
-        # 注: 実際のアプリでは3月～12月も同様に定義
+        'parent_id': item.parent_id
     }
     
     return jsonify(item_data)
 
-@cash_flow_bp.route('/item', methods=['POST'])
+@cash_flow_bp.route('/api/item', methods=['POST'])
 @login_required
 def create_item():
     """資金繰り計画項目の新規作成"""
     data = request.json
     
+    # アクセス権確認
+    plan = CashFlowPlan.query.get(data.get('cash_flow_plan_id'))
+    if not plan or (plan.business_plan and plan.business_plan.user_id != current_user.id):
+        return jsonify({'error': 'アクセス権がありません'}), 403
+    
     new_item = CashFlowItem(
         cash_flow_plan_id=data.get('cash_flow_plan_id'),
         parent_id=data.get('parent_id'),
-        related_plan_item_id=data.get('related_plan_item_id'),
         category=data.get('category'),
         item_type=data.get('item_type', 'detail'),
         name=data.get('name'),
@@ -117,69 +148,43 @@ def create_item():
         sort_order=data.get('sort_order', 0)
     )
     
-    # 月別・日別金額があれば設定（1月の例）
-    m1 = data.get('m1', {})
-    if 'd5' in m1: new_item.m1_d5 = m1['d5']
-    if 'd10' in m1: new_item.m1_d10 = m1['d10']
-    if 'd15' in m1: new_item.m1_d15 = m1['d15']
-    if 'd20' in m1: new_item.m1_d20 = m1['d20']
-    if 'd25' in m1: new_item.m1_d25 = m1['d25']
-    if 'end' in m1: new_item.m1_end = m1['end']
-    
-    # 2月の例（実際のアプリでは3月～12月も同様に処理）
-    m2 = data.get('m2', {})
-    if 'd5' in m2: new_item.m2_d5 = m2['d5']
-    if 'd10' in m2: new_item.m2_d10 = m2['d10']
-    if 'd15' in m2: new_item.m2_d15 = m2['d15']
-    if 'd20' in m2: new_item.m2_d20 = m2['d20']
-    if 'd25' in m2: new_item.m2_d25 = m2['d25']
-    if 'end' in m2: new_item.m2_end = m2['end']
-    
     db.session.add(new_item)
     db.session.commit()
     
     return jsonify({'id': new_item.id, 'success': True})
 
-@cash_flow_bp.route('/item/<int:item_id>', methods=['PUT'])
+@cash_flow_bp.route('/api/item/<int:item_id>', methods=['PUT'])
 @login_required
 def update_item(item_id):
     """資金繰り計画項目の更新"""
     item = CashFlowItem.query.get_or_404(item_id)
+    
+    # アクセス権確認
+    plan = CashFlowPlan.query.get(item.cash_flow_plan_id)
+    if plan.business_plan and plan.business_plan.user_id != current_user.id:
+        return jsonify({'error': 'アクセス権がありません'}), 403
+    
     data = request.json
     
     # 基本情報の更新
     if 'name' in data: item.name = data['name']
     if 'category' in data: item.category = data['category']
     if 'description' in data: item.description = data['description']
-    if 'related_plan_item_id' in data: item.related_plan_item_id = data['related_plan_item_id']
-    
-    # 月別・日別金額の更新（1月の例）
-    m1 = data.get('m1', {})
-    if 'd5' in m1: item.m1_d5 = m1['d5']
-    if 'd10' in m1: item.m1_d10 = m1['d10']
-    if 'd15' in m1: item.m1_d15 = m1['d15']
-    if 'd20' in m1: item.m1_d20 = m1['d20']
-    if 'd25' in m1: item.m1_d25 = m1['d25']
-    if 'end' in m1: item.m1_end = m1['end']
-    
-    # 2月の例（実際のアプリでは3月～12月も同様に処理）
-    m2 = data.get('m2', {})
-    if 'd5' in m2: item.m2_d5 = m2['d5']
-    if 'd10' in m2: item.m2_d10 = m2['d10']
-    if 'd15' in m2: item.m2_d15 = m2['d15']
-    if 'd20' in m2: item.m2_d20 = m2['d20']
-    if 'd25' in m2: item.m2_d25 = m2['d25']
-    if 'end' in m2: item.m2_end = m2['end']
     
     db.session.commit()
     
     return jsonify({'success': True})
 
-@cash_flow_bp.route('/item/<int:item_id>', methods=['DELETE'])
+@cash_flow_bp.route('/api/item/<int:item_id>', methods=['DELETE'])
 @login_required
 def delete_item(item_id):
     """資金繰り計画項目の削除"""
     item = CashFlowItem.query.get_or_404(item_id)
+    
+    # アクセス権確認
+    plan = CashFlowPlan.query.get(item.cash_flow_plan_id)
+    if plan.business_plan and plan.business_plan.user_id != current_user.id:
+        return jsonify({'error': 'アクセス権がありません'}), 403
     
     # 子項目も一緒に削除（SQLAlchemyのカスケード設定があるためDB上では自動的に削除される）
     db.session.delete(item)

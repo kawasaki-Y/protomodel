@@ -105,26 +105,43 @@
                 <ul>
                     <li class="mb-1">
                         <a href="{{ url_for('main.dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/dashboard' %}bg-blue-600{% endif %}">
-                            <i class="fas fa-chart-line mr-3"></i>
+                            <i class="fas fa-tachometer-alt mr-3"></i>
                             <span>ダッシュボード</span>
                         </a>
                     </li>
                     
-                    {% if current_user.is_authenticated %}
+                    <!-- 単年事業計画のドロップダウンメニュー -->
                     <li class="mb-1">
-                        <a href="{{ url_for('business_plan.current_plan') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/business-plan/current') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-calendar-alt mr-3"></i>
+                        <button type="button" class="flex items-center w-full px-4 py-2 hover:bg-gray-700 rounded text-left" id="business-plan-dropdown-btn">
+                            <i class="fas fa-file-invoice-dollar mr-3"></i>
                             <span>単年事業計画</span>
+                            <i class="fas fa-chevron-down ml-auto"></i>
+                        </button>
+                        <ul class="pl-4 mt-1 hidden" id="business-plan-dropdown">
+                            <li class="mb-1">
+                                <a href="{{ url_for('business_plan.current') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if '/business-plan/current' in request.path %}bg-blue-600{% endif %}">
+                                    <i class="fas fa-file-alt mr-3"></i>
+                                    <span>事業計画</span>
+                                </a>
+                            </li>
+                            <li class="mb-1">
+                                <a href="{{ url_for('business_plan.items') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if '/business-plan/items' in request.path %}bg-blue-600{% endif %}">
+                                    <i class="fas fa-calculator mr-3"></i>
+                                    <span>数値計画</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <li class="mb-1">
+                        <a href="{{ url_for('business_plan.next') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/business-plan/next') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-chart-line mr-3"></i>
+                            <span>次年度計画</span>
                         </a>
                     </li>
+                    
                     <li class="mb-1">
-                        <a href="{{ url_for('business_plan.next_plan') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/business-plan/next') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-calendar-plus mr-3"></i>
-                            <span>来期事業計画</span>
-                        </a>
-                    </li>
-                    <li class="mb-1">
-                        <a href="{{ url_for('cash_flow.cash_flow') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/cash-flow') %}bg-blue-600{% endif %}">
+                        <a href="{{ url_for('cash_flow.index') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/cash-flow') %}bg-blue-600{% endif %}">
                             <i class="fas fa-money-bill-wave mr-3"></i>
                             <span>資金繰り計画</span>
                         </a>
@@ -198,6 +215,7 @@
                         </div>
                     </li>
                     
+                    {% if current_user.is_authenticated %}
                     <li class="mb-1 mt-6 border-t border-gray-700 pt-4">
                         <a href="{{ url_for('auth.profile') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/profile' %}bg-blue-600{% endif %}">
                             <i class="fas fa-user mr-3"></i>
@@ -298,6 +316,33 @@
                 }
             });
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 既存のスクリプトはそのまま保持
+
+            // 単年事業計画ドロップダウン
+            const businessPlanDropdownBtn = document.getElementById('business-plan-dropdown-btn');
+            const businessPlanDropdown = document.getElementById('business-plan-dropdown');
+            
+            businessPlanDropdownBtn.addEventListener('click', function() {
+                businessPlanDropdown.classList.toggle('hidden');
+                
+                // アイコンの回転
+                const icon = this.querySelector('.fa-chevron-down');
+                if (businessPlanDropdown.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            });
+            
+            // 現在のページがドロップダウン内のリンクの場合、ドロップダウンを開く
+            if (window.location.pathname.startsWith('/business-plan/current') || 
+                window.location.pathname.startsWith('/business-plan/items')) {
+                businessPlanDropdown.classList.remove('hidden');
+                businessPlanDropdownBtn.querySelector('.fa-chevron-down').style.transform = 'rotate(180deg)';
+            }
+        });
     </script>
     
     {% block scripts %}{% endblock %}

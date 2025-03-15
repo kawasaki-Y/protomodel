@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from app.models.models import db, User
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 import config
 import os
 from werkzeug.security import generate_password_hash
@@ -24,7 +24,7 @@ def create_app():
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'この機能を使用するにはログインが必要です'
+    login_manager.login_message = 'このページにアクセスするには、ログインが必要です。'
     login_manager.login_message_category = 'info'
     
     @login_manager.user_loader
@@ -39,7 +39,7 @@ def create_app():
     # from app.routes.export_routes import export_bp
     from app.routes.auth_routes import auth_bp
     from app.routes.analytics_routes import analytics_bp
-    from app.routes.account_settings import account_settings_bp
+    from app.routes.account_settings.routes import account_settings_bp
     # モジュールが見つからないためコメントアウト
     # from app.routes.dashboard_routes import dashboard_bp
     # from app.routes.user_management_routes import user_management_bp
@@ -57,6 +57,13 @@ def create_app():
     # app.register_blueprint(dashboard_bp)
     # app.register_blueprint(user_management_bp)
     # app.register_blueprint(actual_data_bp)
+    
+    # Redirect root to dashboard for authenticated users
+    @app.route('/')
+    def index():
+        if current_user.is_authenticated:
+            return redirect(url_for('main.dashboard'))
+        return redirect(url_for('main.home'))
     
     # データベース作成
     with app.app_context():

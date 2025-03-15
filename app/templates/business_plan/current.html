@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block page_title %}事業計画{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- ヘッダー部分 -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">事業計画</h1>
+        <div class="flex space-x-2">
+            <button id="create-plan-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">
+                <i class="fas fa-plus mr-2"></i>新規作成
+            </button>
+            <button id="print-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow">
+                <i class="fas fa-print mr-2"></i>印刷
+            </button>
+        </div>
+    </div>
+
+    <!-- 事業計画がない場合のメッセージ -->
+    <div id="no-plan-message" class="hidden bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="text-center">
+            <i class="fas fa-file-invoice-dollar text-gray-400 text-5xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">事業計画がありません</h3>
+            <p class="text-gray-600 mb-4">事業計画を作成して、年間の収支計画を管理しましょう。</p>
+            <button id="create-first-plan-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md shadow-sm">
+                <i class="fas fa-plus mr-2"></i>事業計画を作成する
+            </button>
+        </div>
+    </div>
+
+    <!-- 事業計画表示部分 -->
+    <div id="plan-content" class="hidden">
+        <!-- 計画概要 -->
+        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <span id="plan-year"></span>年度 事業計画
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-md font-medium text-gray-700 mb-2">期間</h3>
+                    <p class="text-gray-900"><span id="plan-period"></span></p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-md font-medium text-gray-700 mb-2">売上計画</h3>
+                    <p class="text-gray-900"><span id="plan-sales"></span>円</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-md font-medium text-gray-700 mb-2">利益計画</h3>
+                    <p class="text-gray-900"><span id="plan-profit"></span>円</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 収支計画表 -->
+        <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-800">事業計画詳細</h3>
+                <p class="text-gray-600">月別収支計画（単位：円）</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left w-1/4">科目</th>
+                            <th id="month-header-total" class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right">年間合計</th>
+                            <!-- 月別ヘッダーはJavaScriptで動的に生成 -->
+                        </tr>
+                    </thead>
+                    <tbody id="plan-table-body">
+                        <!-- JavaScript で動的に生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新規計画作成確認モーダル -->
+<div id="create-plan-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4">新しい事業計画の作成</h3>
+        <p class="mb-6">新しい事業計画を作成します。よろしいですか？</p>
+        <div class="flex justify-end">
+            <button id="cancel-create-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md mr-2">キャンセル</button>
+            <form action="{{ url_for('business_plan.create_plan') }}" method="post">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md">作成する</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ボタンの参照
+    const createPlanBtn = document.getElementById('create-plan-btn');
+    const createFirstPlanBtn = document.getElementById('create-first-plan-btn');
+    const printBtn = document.getElementById('print-btn');
+    const createPlanModal = document.getElementById('create-plan-modal');
+    const cancelCreateBtn = document.getElementById('cancel-create-btn');
+
+    // コンテンツ領域
+    const noPlanMessage = document.getElementById('no-plan-message');
+    const planContent = document.getElementById('plan-content');
+    
+    // 事業計画を取得して表示
+    fetchCurrentPlan();
+    
+    // ボタンイベントの設定
+    if (createPlanBtn) {
+        createPlanBtn.addEventListener('click', function() {
+            createPlanModal.classList.remove('hidden');
+        });
+    }
+    
+    if (createFirstPlanBtn) {
+        createFirstPlanBtn.addEventListener('click', function() {
+            createPlanModal.classList.remove('hidden');
+        });
+    }
+    
+    if (cancelCreateBtn) {
+        cancelCreateBtn.addEventListener('click', function() {
+            createPlanModal.classList.add('hidden');
+        });
+    }
+    
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+    }
+    
+    // 現在の事業計画を取得する関数
+    function fetchCurrentPlan() {
+        fetch('/business-plan/api/current-plan')
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // 事業計画が存在する場合、計画の詳細情報を取得
+                    showPlanContent();
+                    updatePlanSummary(data);
+                    fetchPlanItems();
+                } else {
+                    // 事業計画がない場合、メッセージを表示
+                    showNoPlanMessage();
+                }
+            })
+            .catch(error => {
+                console.error('事業計画の取得に失敗しました:', error);
+                showNoPlanMessage();
+            });
+    }
+    
+    // 事業計画の項目を取得する関数
+    function fetchPlanItems() {
+        fetch('/business-plan/api/plan-items')
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // 月別ヘッダーを生成
+                    generateMonthHeaders(data.months);
+                    // 事業計画項目を表示
+                    renderPlanItems(data.items);
+                    // 売上・利益の合計を計算して表示
+                    calculateTotals(data.items);
+                }
+            })
+            .catch(error => {
+                console.error('事業計画項目の取得に失敗しました:', error);
+            });
+    }
+    
+    // 事業計画がない場合のメッセージを表示
+    function showNoPlanMessage() {
+        noPlanMessage.classList.remove('hidden');
+        planContent.classList.add('hidden');
+    }
+    
+    // 事業計画内容を表示
+    function showPlanContent() {
+        noPlanMessage.classList.add('hidden');
+        planContent.classList.remove('hidden');
+    }
+    
+    // 事業計画の概要情報を更新
+    function updatePlanSummary(planData) {
+        document.getElementById('plan-year').textContent = planData.year;
+        document.getElementById('plan-period').textContent = `${planData.start_month} 〜 ${planData.end_month}`;
+    }
+    
+    // 月別ヘッダーを生成
+    function generateMonthHeaders(months) {
+        const headerRow = document.querySelector('thead tr');
+        const totalHeader = document.getElementById('month-header-total');
+        
+        // 既存の月ヘッダーをクリア（合計ヘッダーを除く）
+        while (headerRow.childElementCount > 2) {
+            headerRow.removeChild(headerRow.lastChild);
+        }
+        
+        // 月ヘッダーを生成
+        months.forEach(month => {
+            const th = document.createElement('th');
+            th.className = 'py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right';
+            th.textContent = month.replace('-', '/');
+            headerRow.appendChild(th);
+        });
+    }
+    
+    // 事業計画項目を表示
+    function renderPlanItems(items) {
+        const tableBody = document.getElementById('plan-table-body');
+        tableBody.innerHTML = '';
+        
+        items.forEach(category => {
+            // カテゴリ行（親項目）
+            const categoryRow = document.createElement('tr');
+            categoryRow.className = 'bg-gray-50';
+            
+            const categoryNameCell = document.createElement('td');
+            categoryNameCell.className = 'py-3 px-4 font-semibold text-gray-800 border-b border-gray-200';
+            categoryNameCell.textContent = category.name;
+            categoryRow.appendChild(categoryNameCell);
+            
+            const categoryTotalCell = document.createElement('td');
+            categoryTotalCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
+            categoryTotalCell.textContent = formatCurrency(category.amounts.total);
+            categoryRow.appendChild(categoryTotalCell);
+            
+            // 月別の金額セルを追加
+            for (let i = 1; i <= 12; i++) {
+                const monthKey = `m${i}`;
+                if (monthKey in category.amounts.months) {
+                    const cell = document.createElement('td');
+                    cell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
+                    cell.textContent = formatCurrency(category.amounts.months[monthKey]);
+                    categoryRow.appendChild(cell);
+                }
+            }
+            
+            tableBody.appendChild(categoryRow);
+            
+            // 子項目行
+            category.children.forEach(item => {
+                const itemRow = document.createElement('tr');
+                
+                const itemNameCell = document.createElement('td');
+                itemNameCell.className = 'py-3 px-4 pl-8 text-gray-700 border-b border-gray-200';
+                itemNameCell.textContent = item.name;
+                itemRow.appendChild(itemNameCell);
+                
+                const itemTotalCell = document.createElement('td');
+                itemTotalCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
+                itemTotalCell.textContent = formatCurrency(item.amounts.total);
+                itemRow.appendChild(itemTotalCell);
+                
+                // 月別の金額セルを追加
+                for (let i = 1; i <= 12; i++) {
+                    const monthKey = `m${i}`;
+                    if (monthKey in item.amounts.months) {
+                        const cell = document.createElement('td');
+                        cell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
+                        cell.textContent = formatCurrency(item.amounts.months[monthKey]);
+                        itemRow.appendChild(cell);
+                    }
+                }
+                
+                tableBody.appendChild(itemRow);
+            });
+        });
+    }
+    
+    // 売上・利益の合計を計算
+    function calculateTotals(items) {
+        let totalSales = 0;
+        let totalProfit = 0;
+        
+        items.forEach(category => {
+            if (category.category === '収益') {
+                totalSales += category.amounts.total;
+            }
+        });
+        
+        // 簡易的な利益計算（収益 - 費用）
+        let totalExpenses = 0;
+        items.forEach(category => {
+            if (category.category === '費用') {
+                totalExpenses += category.amounts.total;
+            }
+        });
+        
+        totalProfit = totalSales - totalExpenses;
+        
+        // 表示更新
+        document.getElementById('plan-sales').textContent = formatCurrency(totalSales);
+        document.getElementById('plan-profit').textContent = formatCurrency(totalProfit);
+    }
+    
+    // 通貨フォーマット関数
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('ja-JP').format(value);
+    }
+});
+</script>
+{% endblock %} 

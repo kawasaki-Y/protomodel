@@ -4,14 +4,57 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">損益計算書科目の新規登録</h3>
+            <p class="text-gray-600 mb-4">新しい勘定科目を登録します。</p>
+            
+            <form id="account-item-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">科目名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 mb-1">要素 <span class="text-red-500">*</span></label>
+                        <select id="category" name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">選択してください</option>
+                            <option value="収益">収益</option>
+                            <option value="費用">費用</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="sub_category" class="block text-sm font-medium text-gray-700 mb-1">区分 <span class="text-red-500">*</span></label>
+                        <select id="sub_category" name="sub_category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required disabled>
+                            <option value="">要素を選択してください</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="display_order" class="block text-sm font-medium text-gray-700 mb-1">表示順</label>
+                        <input type="number" id="display_order" name="display_order" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="0">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end">
+                    <input type="hidden" id="edit_id" name="edit_id" value="">
+                    <button type="button" id="cancel-edit-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md mr-2 hidden">
+                        編集キャンセル
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md">
+                        <i class="fas fa-save mr-2"></i>保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="bg-white shadow-md rounded-lg p-6">
         <div class="mb-6">
             <h3 class="text-xl font-semibold text-gray-800 mb-4">損益計算書科目一覧</h3>
-            <p class="text-gray-600 mb-4">損益計算書に表示される科目の管理ができます。</p>
-            
-            <button class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg">
-                <i class="fas fa-plus mr-2"></i>新規科目追加
-            </button>
+            <p class="text-gray-600 mb-4">損益計算書に表示される科目の一覧です。</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -20,43 +63,297 @@
                     <tr>
                         <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">科目コード</th>
                         <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">科目名</th>
+                        <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">要素</th>
                         <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">区分</th>
                         <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">表示順</th>
                         <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left">操作</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td class="py-3 px-4 border-b border-gray-200">1001</td>
-                        <td class="py-3 px-4 border-b border-gray-200">売上高</td>
-                        <td class="py-3 px-4 border-b border-gray-200">収益</td>
-                        <td class="py-3 px-4 border-b border-gray-200">10</td>
-                        <td class="py-3 px-4 border-b border-gray-200">
-                            <button class="text-blue-500 hover:text-blue-700 mr-2">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="py-3 px-4 border-b border-gray-200">2001</td>
-                        <td class="py-3 px-4 border-b border-gray-200">売上原価</td>
-                        <td class="py-3 px-4 border-b border-gray-200">費用</td>
-                        <td class="py-3 px-4 border-b border-gray-200">20</td>
-                        <td class="py-3 px-4 border-b border-gray-200">
-                            <button class="text-blue-500 hover:text-blue-700 mr-2">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
+                <tbody id="account-items-list">
+                    <!-- JavaScriptで動的に生成されます -->
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<!-- 削除確認モーダル -->
+<div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4">科目の削除</h3>
+        <p class="mb-6">科目「<span id="delete-item-name"></span>」を削除してもよろしいですか？</p>
+        <div class="flex justify-end">
+            <button id="cancel-delete-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md mr-2">キャンセル</button>
+            <button id="confirm-delete-btn" class="bg-red-500 text-white px-4 py-2 rounded-md">削除</button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 科目一覧の取得
+    loadAccountItems();
+    
+    // 要素の選択に応じた区分リストの更新
+    const categorySelect = document.getElementById('category');
+    const subCategorySelect = document.getElementById('sub_category');
+    
+    categorySelect.addEventListener('change', function() {
+        updateSubCategories(this.value);
+    });
+    
+    // フォーム送信処理
+    const accountItemForm = document.getElementById('account-item-form');
+    accountItemForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveAccountItem();
+    });
+    
+    // 編集キャンセルボタン
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    cancelEditBtn.addEventListener('click', function() {
+        resetForm();
+    });
+    
+    // 削除モーダルの処理
+    const deleteModal = document.getElementById('delete-modal');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    
+    cancelDeleteBtn.addEventListener('click', function() {
+        deleteModal.classList.add('hidden');
+    });
+    
+    confirmDeleteBtn.addEventListener('click', function() {
+        const itemId = confirmDeleteBtn.dataset.itemId;
+        deleteAccountItem(itemId);
+    });
+});
+
+// 科目一覧読み込み
+function loadAccountItems() {
+    fetch('/account-settings/api/account-items')
+        .then(response => response.json())
+        .then(data => {
+            renderAccountItems(data);
+        })
+        .catch(error => {
+            console.error('科目データの取得に失敗しました:', error);
+            alert('科目データの取得に失敗しました');
+        });
+}
+
+// 科目一覧の表示
+function renderAccountItems(items) {
+    const tbody = document.getElementById('account-items-list');
+    tbody.innerHTML = '';
+    
+    if (items.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td colspan="6" class="py-3 px-4 text-center text-gray-500">
+                登録されている科目はありません
+            </td>
+        `;
+        tbody.appendChild(tr);
+        return;
+    }
+    
+    items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="py-3 px-4 border-b border-gray-200">${item.code}</td>
+            <td class="py-3 px-4 border-b border-gray-200">${item.name}</td>
+            <td class="py-3 px-4 border-b border-gray-200">${item.category}</td>
+            <td class="py-3 px-4 border-b border-gray-200">${item.sub_category}</td>
+            <td class="py-3 px-4 border-b border-gray-200">${item.display_order}</td>
+            <td class="py-3 px-4 border-b border-gray-200">
+                <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="editAccountItem(${item.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="text-red-500 hover:text-red-700" onclick="showDeleteModal(${item.id}, '${item.name}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// 要素に応じた区分の更新
+function updateSubCategories(category) {
+    const subCategorySelect = document.getElementById('sub_category');
+    subCategorySelect.innerHTML = '';
+    
+    if (!category) {
+        subCategorySelect.disabled = true;
+        subCategorySelect.innerHTML = '<option value="">要素を選択してください</option>';
+        return;
+    }
+    
+    subCategorySelect.disabled = false;
+    
+    if (category === '収益') {
+        // 収益の区分
+        const options = [
+            { value: '売上高', text: '売上高' },
+            { value: '営業外収益', text: '営業外収益' },
+            { value: '特別利益', text: '特別利益' }
+        ];
+        
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.textContent = option.text;
+            subCategorySelect.appendChild(optionElement);
+        });
+    } else if (category === '費用') {
+        // 費用の区分
+        const options = [
+            { value: '売上原価', text: '売上原価' },
+            { value: '販管費', text: '販売費及び一般管理費' },
+            { value: '営業外費用', text: '営業外費用' },
+            { value: '特別損失', text: '特別損失' }
+        ];
+        
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.textContent = option.text;
+            subCategorySelect.appendChild(optionElement);
+        });
+    }
+}
+
+// 科目の保存（新規追加/更新）
+function saveAccountItem() {
+    const form = document.getElementById('account-item-form');
+    const editId = document.getElementById('edit_id').value;
+    
+    const formData = {
+        name: document.getElementById('name').value,
+        category: document.getElementById('category').value,
+        sub_category: document.getElementById('sub_category').value,
+        display_order: parseInt(document.getElementById('display_order').value) || 0
+    };
+    
+    // バリデーション
+    if (!formData.name || !formData.category || !formData.sub_category) {
+        alert('必須項目を入力してください');
+        return;
+    }
+    
+    let url = '/account-settings/api/account-items';
+    let method = 'POST';
+    
+    // 編集の場合
+    if (editId) {
+        url = `/account-settings/api/account-items/${editId}`;
+        method = 'PUT';
+    }
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => Promise.reject(data.error || '保存に失敗しました'));
+        }
+        return response.json();
+    })
+    .then(data => {
+        // 成功時の処理
+        loadAccountItems();  // 一覧を再読み込み
+        resetForm();         // フォームをリセット
+        alert(editId ? '科目を更新しました' : '科目を追加しました');
+    })
+    .catch(error => {
+        console.error('保存に失敗しました:', error);
+        alert(`保存に失敗しました: ${error}`);
+    });
+}
+
+// 科目の編集
+function editAccountItem(id) {
+    // 科目データの取得
+    fetch(`/account-settings/api/account-items`)
+        .then(response => response.json())
+        .then(data => {
+            const item = data.find(item => item.id === id);
+            if (!item) {
+                throw new Error('科目が見つかりません');
+            }
+            
+            // フォームに値をセット
+            document.getElementById('edit_id').value = item.id;
+            document.getElementById('name').value = item.name;
+            document.getElementById('category').value = item.category;
+            updateSubCategories(item.category);
+            document.getElementById('sub_category').value = item.sub_category;
+            document.getElementById('display_order').value = item.display_order;
+            
+            // 編集モード表示
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.querySelector('#account-item-form button[type="submit"]').textContent = '更新';
+            
+            // フォームにスクロール
+            document.getElementById('account-item-form').scrollIntoView({ behavior: 'smooth' });
+        })
+        .catch(error => {
+            console.error('編集データの取得に失敗しました:', error);
+            alert('編集データの取得に失敗しました');
+        });
+}
+
+// 削除確認モーダル表示
+function showDeleteModal(id, name) {
+    const deleteModal = document.getElementById('delete-modal');
+    const deleteItemName = document.getElementById('delete-item-name');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    
+    deleteItemName.textContent = name;
+    confirmDeleteBtn.dataset.itemId = id;
+    
+    deleteModal.classList.remove('hidden');
+}
+
+// 科目の削除
+function deleteAccountItem(id) {
+    fetch(`/account-settings/api/account-items/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => Promise.reject(data.error || '削除に失敗しました'));
+        }
+        return response.json();
+    })
+    .then(data => {
+        // 成功時の処理
+        document.getElementById('delete-modal').classList.add('hidden');
+        loadAccountItems();  // 一覧を再読み込み
+        alert('科目を削除しました');
+    })
+    .catch(error => {
+        console.error('削除に失敗しました:', error);
+        alert(`削除に失敗しました: ${error}`);
+        document.getElementById('delete-modal').classList.add('hidden');
+    });
+}
+
+// フォームのリセット
+function resetForm() {
+    document.getElementById('account-item-form').reset();
+    document.getElementById('edit_id').value = '';
+    document.getElementById('sub_category').innerHTML = '<option value="">要素を選択してください</option>';
+    document.getElementById('sub_category').disabled = true;
+    document.getElementById('cancel-edit-btn').classList.add('hidden');
+    document.querySelector('#account-item-form button[type="submit"]').innerHTML = '<i class="fas fa-save mr-2"></i>保存';
+}
+</script>
 {% endblock %} 

@@ -1,0 +1,617 @@
+{% extends "base.html" %}
+
+{% block page_title %}数値計画{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- ヘッダー部分 -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">数値計画</h1>
+        <div class="flex space-x-2">
+            <button id="add-item-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">
+                <i class="fas fa-plus mr-2"></i>新規項目追加
+            </button>
+            <button id="save-all-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow">
+                <i class="fas fa-save mr-2"></i>一括保存
+            </button>
+        </div>
+    </div>
+
+    <!-- 事業計画がない場合のメッセージ -->
+    <div id="no-plan-message" class="hidden bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="text-center">
+            <i class="fas fa-file-invoice-dollar text-gray-400 text-5xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">事業計画がありません</h3>
+            <p class="text-gray-600 mb-4">事業計画を作成してから、数値計画を入力してください。</p>
+            <a href="{{ url_for('business_plan.current') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md shadow-sm inline-block">
+                <i class="fas fa-arrow-right mr-2"></i>事業計画ページへ
+            </a>
+        </div>
+    </div>
+
+    <!-- 数値計画入力部分 -->
+    <div id="plan-content" class="hidden">
+        <!-- 計画概要 -->
+        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <span id="plan-year"></span>年度 数値計画
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-md font-medium text-gray-700 mb-2">期間</h3>
+                    <p class="text-gray-900"><span id="plan-period"></span></p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-md font-medium text-gray-700 mb-2">入力手順</h3>
+                    <p class="text-gray-700 text-sm">1. 編集したい項目の「編集」ボタンをクリック</p>
+                    <p class="text-gray-700 text-sm">2. 月別の数値を入力</p>
+                    <p class="text-gray-700 text-sm">3. 「保存」ボタンをクリックして確定</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- カテゴリタブ -->
+        <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+            <div class="flex border-b border-gray-200">
+                <button class="category-tab px-6 py-3 text-gray-700 font-medium border-b-2 border-blue-500" data-category="all">
+                    すべて
+                </button>
+                <button class="category-tab px-6 py-3 text-gray-500 hover:text-gray-700" data-category="収益">
+                    収益
+                </button>
+                <button class="category-tab px-6 py-3 text-gray-500 hover:text-gray-700" data-category="費用">
+                    費用
+                </button>
+            </div>
+
+            <!-- 数値計画項目一覧 -->
+            <div class="p-6">
+                <div id="plan-items-container">
+                    <!-- JavaScriptで動的に生成されます -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 編集モーダル -->
+<div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-4xl w-full">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-gray-800" id="edit-modal-title">項目の編集</h3>
+            <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mb-4">
+            <p class="text-gray-600" id="edit-modal-description">月別の数値を入力してください</p>
+        </div>
+        <div class="overflow-x-auto mb-6">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr>
+                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">月</th>
+                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">金額（円）</th>
+                    </tr>
+                </thead>
+                <tbody id="edit-modal-months">
+                    <!-- JavaScriptで動的に生成 -->
+                </tbody>
+                <tfoot>
+                    <tr class="bg-gray-50">
+                        <td class="py-2 px-4 border-t border-gray-200 font-medium">合計</td>
+                        <td class="py-2 px-4 border-t border-gray-200 text-right font-medium" id="edit-modal-total">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button id="cancel-edit-btn" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">キャンセル</button>
+            <button id="save-edit-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 新規項目追加モーダル -->
+<div id="add-item-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-lg w-full">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-gray-800">新規項目の追加</h3>
+            <button id="close-add-modal-btn" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mb-6">
+            <div class="mb-4">
+                <label for="new-item-name" class="block text-sm font-medium text-gray-700 mb-1">項目名 <span class="text-red-500">*</span></label>
+                <input type="text" id="new-item-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+                <label for="new-item-category" class="block text-sm font-medium text-gray-700 mb-1">カテゴリ <span class="text-red-500">*</span></label>
+                <select id="new-item-category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="収益">収益</option>
+                    <option value="費用">費用</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="new-item-parent" class="block text-sm font-medium text-gray-700 mb-1">親項目 <span class="text-red-500">*</span></label>
+                <select id="new-item-parent" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <!-- JavaScriptで動的に生成 -->
+                </select>
+            </div>
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button id="cancel-add-btn" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">キャンセル</button>
+            <button id="save-add-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">追加</button>
+        </div>
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4">項目の削除</h3>
+        <p class="mb-6">項目「<span id="delete-item-name"></span>」を削除してもよろしいですか？</p>
+        <div class="flex justify-end">
+            <button id="cancel-delete-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md mr-2">キャンセル</button>
+            <button id="confirm-delete-btn" class="bg-red-500 text-white px-4 py-2 rounded-md">削除</button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // モーダル関連
+    const editModal = document.getElementById('edit-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    
+    const addItemModal = document.getElementById('add-item-modal');
+    const addItemBtn = document.getElementById('add-item-btn');
+    const closeAddModalBtn = document.getElementById('close-add-modal-btn');
+    const cancelAddBtn = document.getElementById('cancel-add-btn');
+    const saveAddBtn = document.getElementById('save-add-btn');
+    
+    const deleteModal = document.getElementById('delete-modal');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    
+    // コンテンツ領域
+    const noPlanMessage = document.getElementById('no-plan-message');
+    const planContent = document.getElementById('plan-content');
+    
+    // 現在編集中の項目のID
+    let currentEditItemId = null;
+    
+    // 事業計画のID
+    let currentPlanId = null;
+    
+    // 事業計画データのキャッシュ
+    let planItemsData = null;
+    
+    // 事業計画を取得して表示
+    fetchCurrentPlan();
+    
+    // カテゴリタブのイベント
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // アクティブなタブのスタイルを切り替え
+            document.querySelectorAll('.category-tab').forEach(t => {
+                t.classList.remove('border-b-2', 'border-blue-500', 'text-gray-700', 'font-medium');
+                t.classList.add('text-gray-500');
+            });
+            
+            this.classList.add('border-b-2', 'border-blue-500', 'text-gray-700', 'font-medium');
+            this.classList.remove('text-gray-500');
+            
+            // 選択されたカテゴリに基づいて項目をフィルタリング
+            const category = this.dataset.category;
+            filterItemsByCategory(category);
+        });
+    });
+    
+    // ボタンイベントの設定
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', function() {
+            editModal.classList.add('hidden');
+        });
+    }
+    
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', function() {
+            editModal.classList.add('hidden');
+        });
+    }
+    
+    if (saveEditBtn) {
+        saveEditBtn.addEventListener('click', function() {
+            saveItemChanges();
+        });
+    }
+    
+    if (addItemBtn) {
+        addItemBtn.addEventListener('click', function() {
+            openAddItemModal();
+        });
+    }
+    
+    if (closeAddModalBtn) {
+        closeAddModalBtn.addEventListener('click', function() {
+            addItemModal.classList.add('hidden');
+        });
+    }
+    
+    if (cancelAddBtn) {
+        cancelAddBtn.addEventListener('click', function() {
+            addItemModal.classList.add('hidden');
+        });
+    }
+    
+    if (saveAddBtn) {
+        saveAddBtn.addEventListener('click', function() {
+            addNewItem();
+        });
+    }
+    
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', function() {
+            deleteModal.classList.add('hidden');
+        });
+    }
+    
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function() {
+            deleteItem(confirmDeleteBtn.dataset.itemId);
+        });
+    }
+    
+    // 現在の事業計画を取得する関数
+    function fetchCurrentPlan() {
+        fetch('/business-plan/api/current-plan')
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // 事業計画が存在する場合、計画の詳細情報を取得
+                    currentPlanId = data.id;
+                    showPlanContent();
+                    updatePlanSummary(data);
+                    fetchPlanItems();
+                } else {
+                    // 事業計画がない場合、メッセージを表示
+                    showNoPlanMessage();
+                }
+            })
+            .catch(error => {
+                console.error('事業計画の取得に失敗しました:', error);
+                showNoPlanMessage();
+            });
+    }
+    
+    // 事業計画の項目を取得する関数
+    function fetchPlanItems() {
+        fetch('/business-plan/api/plan-items')
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // データをキャッシュ
+                    planItemsData = data;
+                    // 事業計画項目を表示
+                    renderPlanItems(data.items);
+                    // 親項目のドロップダウンを更新
+                    updateParentItemsDropdown(data.items);
+                }
+            })
+            .catch(error => {
+                console.error('事業計画項目の取得に失敗しました:', error);
+            });
+    }
+    
+    // 事業計画がない場合のメッセージを表示
+    function showNoPlanMessage() {
+        noPlanMessage.classList.remove('hidden');
+        planContent.classList.add('hidden');
+    }
+    
+    // 事業計画内容を表示
+    function showPlanContent() {
+        noPlanMessage.classList.add('hidden');
+        planContent.classList.remove('hidden');
+    }
+    
+    // 事業計画の概要情報を更新
+    function updatePlanSummary(planData) {
+        document.getElementById('plan-year').textContent = planData.year;
+        document.getElementById('plan-period').textContent = `${planData.start_month} 〜 ${planData.end_month}`;
+    }
+    
+    // 事業計画項目を表示
+    function renderPlanItems(items) {
+        const container = document.getElementById('plan-items-container');
+        container.innerHTML = '';
+        
+        items.forEach(category => {
+            // カテゴリセクション
+            const categorySection = document.createElement('div');
+            categorySection.className = 'mb-8 category-section';
+            categorySection.dataset.category = category.category;
+            
+            // カテゴリヘッダー
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'flex justify-between items-center mb-4';
+            
+            const categoryTitle = document.createElement('h3');
+            categoryTitle.className = 'text-lg font-semibold text-gray-800';
+            categoryTitle.textContent = category.name;
+            categoryHeader.appendChild(categoryTitle);
+            
+            const categoryTotal = document.createElement('div');
+            categoryTotal.className = 'text-gray-600';
+            categoryTotal.textContent = `合計: ${formatCurrency(category.amounts.total)}円`;
+            categoryHeader.appendChild(categoryTotal);
+            
+            categorySection.appendChild(categoryHeader);
+            
+            // 子項目一覧
+            const itemsList = document.createElement('div');
+            itemsList.className = 'space-y-2';
+            
+            category.children.forEach(item => {
+                const itemRow = document.createElement('div');
+                itemRow.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-md';
+                
+                const itemInfo = document.createElement('div');
+                itemInfo.className = 'flex-1';
+                
+                const itemName = document.createElement('div');
+                itemName.className = 'font-medium text-gray-700';
+                itemName.textContent = item.name;
+                itemInfo.appendChild(itemName);
+                
+                const itemAmount = document.createElement('div');
+                itemAmount.className = 'text-sm text-gray-500';
+                itemAmount.textContent = `年間合計: ${formatCurrency(item.amounts.total)}円`;
+                itemInfo.appendChild(itemAmount);
+                
+                itemRow.appendChild(itemInfo);
+                
+                // アクションボタン
+                const actionButtons = document.createElement('div');
+                actionButtons.className = 'flex space-x-2';
+                
+                const editButton = document.createElement('button');
+                editButton.className = 'px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600';
+                editButton.innerHTML = '<i class="fas fa-edit mr-1"></i>編集';
+                editButton.addEventListener('click', function() {
+                    openEditModal(item);
+                });
+                actionButtons.appendChild(editButton);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600';
+                deleteButton.innerHTML = '<i class="fas fa-trash-alt mr-1"></i>削除';
+                deleteButton.addEventListener('click', function() {
+                    showDeleteConfirmation(item);
+                });
+                actionButtons.appendChild(deleteButton);
+                
+                itemRow.appendChild(actionButtons);
+                
+                itemsList.appendChild(itemRow);
+            });
+            
+            categorySection.appendChild(itemsList);
+            container.appendChild(categorySection);
+        });
+    }
+    
+    // カテゴリに基づいて項目をフィルタリング
+    function filterItemsByCategory(category) {
+        const sections = document.querySelectorAll('.category-section');
+        
+        sections.forEach(section => {
+            if (category === 'all' || section.dataset.category === category) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        });
+    }
+    
+    // 編集モーダルを開く
+    function openEditModal(item) {
+        currentEditItemId = item.id;
+        
+        // モーダルのタイトルと説明を設定
+        document.getElementById('edit-modal-title').textContent = `項目の編集: ${item.name}`;
+        document.getElementById('edit-modal-description').textContent = '月別の数値を入力してください。';
+        
+        // 月別入力フォームを生成
+        const monthsTable = document.getElementById('edit-modal-months');
+        monthsTable.innerHTML = '';
+        
+        for (let i = 1; i <= 12; i++) {
+            const monthKey = `m${i}`;
+            if (monthKey in item.amounts.months) {
+                const row = document.createElement('tr');
+                
+                const monthCell = document.createElement('td');
+                monthCell.className = 'py-2 px-4 border-b border-gray-200';
+                monthCell.textContent = `${i}月`;
+                row.appendChild(monthCell);
+                
+                const amountCell = document.createElement('td');
+                amountCell.className = 'py-2 px-4 border-b border-gray-200';
+                
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'w-full text-right px-2 py-1 border border-gray-300 rounded month-amount-input';
+                input.value = item.amounts.months[monthKey];
+                input.dataset.month = monthKey;
+                input.addEventListener('input', updateTotal);
+                amountCell.appendChild(input);
+                
+                row.appendChild(amountCell);
+                monthsTable.appendChild(row);
+            }
+        }
+        
+        // 合計を更新
+        updateTotal();
+        
+        // モーダルを表示
+        editModal.classList.remove('hidden');
+    }
+    
+    // 合計金額の更新
+    function updateTotal() {
+        let total = 0;
+        document.querySelectorAll('.month-amount-input').forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        
+        document.getElementById('edit-modal-total').textContent = formatCurrency(total);
+    }
+    
+    // 項目の変更を保存
+    function saveItemChanges() {
+        if (!currentEditItemId) return;
+        
+        // 入力値を収集
+        const amounts = {};
+        document.querySelectorAll('.month-amount-input').forEach(input => {
+            amounts[input.dataset.month] = parseInt(input.value) || 0;
+        });
+        
+        // APIリクエスト
+        fetch(`/business-plan/api/plan-items/${currentEditItemId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                amounts: amounts
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // モーダルを閉じる
+                editModal.classList.add('hidden');
+                // データを再取得して表示を更新
+                fetchPlanItems();
+            } else {
+                alert('更新に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('更新エラー:', error);
+            alert('更新処理中にエラーが発生しました');
+        });
+    }
+    
+    // 親項目のドロップダウンを更新
+    function updateParentItemsDropdown(items) {
+        const dropdown = document.getElementById('new-item-parent');
+        dropdown.innerHTML = '';
+        
+        items.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            dropdown.appendChild(option);
+        });
+    }
+    
+    // 新規項目追加モーダルを開く
+    function openAddItemModal() {
+        // フォームのリセット
+        document.getElementById('new-item-name').value = '';
+        document.getElementById('new-item-category').selectedIndex = 0;
+        
+        // モーダルを表示
+        addItemModal.classList.remove('hidden');
+    }
+    
+    // 新規項目を追加
+    function addNewItem() {
+        const name = document.getElementById('new-item-name').value.trim();
+        const category = document.getElementById('new-item-category').value;
+        const parentId = document.getElementById('new-item-parent').value;
+        
+        if (!name) {
+            alert('項目名を入力してください');
+            return;
+        }
+        
+        // APIリクエスト
+        fetch('/business-plan/api/plan-items', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                plan_id: currentPlanId,
+                name: name,
+                category: category,
+                parent_id: parentId,
+                item_type: 'child'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // モーダルを閉じる
+                addItemModal.classList.add('hidden');
+                // データを再取得して表示を更新
+                fetchPlanItems();
+            } else {
+                alert('項目の追加に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('追加エラー:', error);
+            alert('追加処理中にエラーが発生しました');
+        });
+    }
+    
+    // 削除確認モーダルを表示
+    function showDeleteConfirmation(item) {
+        document.getElementById('delete-item-name').textContent = item.name;
+        document.getElementById('confirm-delete-btn').dataset.itemId = item.id;
+        deleteModal.classList.remove('hidden');
+    }
+    
+    // 項目を削除
+    function deleteItem(itemId) {
+        if (!itemId) return;
+        
+        // APIリクエスト
+        fetch(`/business-plan/api/plan-items/${itemId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // モーダルを閉じる
+                deleteModal.classList.add('hidden');
+                // データを再取得して表示を更新
+                fetchPlanItems();
+            } else {
+                alert('削除に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('削除エラー:', error);
+            alert('削除処理中にエラーが発生しました');
+        });
+    }
+    
+    // 通貨フォーマット関数
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('ja-JP').format(value);
+    }
+});
+</script>
+{% endblock %} 

@@ -93,7 +93,7 @@
                         <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.start_month }}月～{{ plan.end_month }}月</td>
                         <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.created_at.strftime('%Y/%m/%d') }}</td>
                         <td class="px-4 py-2 text-sm text-gray-700 border">
-                            <a href="{{ url_for('business_plan.current_plan') }}" class="text-blue-600 hover:underline">表示</a>
+                            <a href="{{ url_for('business_plan.current') }}" class="text-blue-600 hover:underline">表示</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -125,7 +125,7 @@
                         <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.start_month }}月～{{ plan.end_month }}月</td>
                         <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.created_at.strftime('%Y/%m/%d') }}</td>
                         <td class="px-4 py-2 text-sm text-gray-700 border">
-                            <a href="{{ url_for('business_plan.next_plan') }}" class="text-blue-600 hover:underline">表示</a>
+                            <a href="{{ url_for('business_plan.next') }}" class="text-blue-600 hover:underline">表示</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -139,10 +139,10 @@
     <div class="text-center py-8">
         <p class="text-gray-500 mb-4">まだ事業計画が作成されていません。</p>
         <div class="space-x-4">
-            <a href="{{ url_for('business_plan.current_plan') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+            <a href="{{ url_for('business_plan.current') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
                 単年事業計画を作成
             </a>
-            <a href="{{ url_for('business_plan.next_plan') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded">
+            <a href="{{ url_for('business_plan.next') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded">
                 来期事業計画を作成
             </a>
         </div>
