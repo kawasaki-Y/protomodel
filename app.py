@@ -40,6 +40,7 @@ def create_app():
     from app.routes.auth_routes import auth_bp
     from app.routes.analytics_routes import analytics_bp
     from app.routes.account_settings.routes import account_settings_bp
+    from app.routes.numerical_plan_routes import numerical_plan_bp
     # モジュールが見つからないためコメントアウト
     # from app.routes.dashboard_routes import dashboard_bp
     # from app.routes.user_management_routes import user_management_bp
@@ -53,6 +54,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(account_settings_bp)
+    app.register_blueprint(numerical_plan_bp)
     # モジュールが見つからないためコメントアウト
     # app.register_blueprint(dashboard_bp)
     # app.register_blueprint(user_management_bp)

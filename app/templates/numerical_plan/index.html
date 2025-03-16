@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}数値計画{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">数値計画</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 収益計画 -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">収益計画</h2>
+            <div class="space-y-3">
+                <a href="{{ url_for('numerical_plan.revenue_plan', category='sales') }}" 
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition duration-150">
+                    売上高
+                </a>
+                <a href="{{ url_for('numerical_plan.revenue_plan', category='non_operating') }}"
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition duration-150">
+                    営業外収益
+                </a>
+                <a href="{{ url_for('numerical_plan.revenue_plan', category='special') }}"
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition duration-150">
+                    特別利益
+                </a>
+            </div>
+        </div>
+
+        <!-- 費用計画 -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">費用計画</h2>
+            <div class="space-y-3">
+                <a href="{{ url_for('numerical_plan.expense_plan', category='cost') }}"
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition duration-150">
+                    売上原価
+                </a>
+                <a href="{{ url_for('numerical_plan.expense_plan', category='sga') }}"
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition duration-150">
+                    販管費
+                </a>
+                <a href="{{ url_for('numerical_plan.expense_plan', category='non_operating') }}"
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition duration-150">
+                    営業外費用
+                </a>
+                <a href="{{ url_for('numerical_plan.expense_plan', category='special') }}"
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition duration-150">
+                    特別損失
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

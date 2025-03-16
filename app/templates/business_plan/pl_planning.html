@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}損益計算書 数値計画入力{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">損益計算書 数値計画入力</h1>
+        <div class="flex items-center space-x-4">
+            <button id="save-plan-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                変更を保存
+            </button>
+            <a href="{{ url_for('business_plan.current') }}" class="text-gray-600 hover:text-gray-800">
+                ← 事業計画へ戻る
+            </a>
+        </div>
+    </div>
+
+    <!-- 事業計画概要 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-700">事業計画 {{ business_plan.year }}</h2>
+                <p class="text-sm text-gray-500">期間: {{ business_plan.start_month }} 〜 {{ business_plan.end_month }}</p>
+            </div>
+            <div>
+                <span class="text-sm text-gray-500">最終更新: {{ business_plan.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- エラーメッセージ表示エリア -->
+    <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
+    
+    <!-- 成功メッセージ表示エリア -->
+    <div id="success-message" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"></div>
+
+    <!-- データ読み込み中の表示 -->
+    <div id="loading" class="flex justify-center items-center my-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <span class="ml-3 text-lg">データを読み込み中...</span>
+    </div>
+
+    <!-- メイン入力エリア - 読み込み完了後に表示 -->
+    <div id="pl-planning-form" class="hidden">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 w-64">
+                                科目
+                            </th>
+                            <!-- 月ヘッダーは動的に生成 -->
+                            <th id="month-headers" colspan="12" class="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                月別入力欄が読み込まれます
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                合計
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="pl-items-container">
+                        <!-- 項目は JavaScript で動的に生成 -->
+                        <tr>
+                            <td colspan="14" class="text-center py-4">
+                                データを読み込んでいます...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- テンプレート: 各カテゴリのセクション -->
+<template id="category-template">
+    <tr class="category-header bg-gray-100">
+        <td class="px-6 py-2 font-medium sticky left-0 bg-gray-100 z-10" colspan="14">
+            <span class="category-name"></span>
+        </td>
+    </tr>
+</template>
+
+<!-- テンプレート: 項目行 -->
+<template id="item-template">
+    <tr class="item-row hover:bg-gray-50">
+        <td class="px-6 py-2 whitespace-nowrap sticky left-0 bg-white z-10">
+            <span class="item-name font-medium"></span>
+        </td>
+        <!-- 月ごとの入力セルはJavaScriptで動的に生成 -->
+        <td class="px-2 py-2 whitespace-nowrap text-right total-cell">
+            <span class="item-total font-semibold"></span>
+        </td>
+    </tr>
+</template>
+
+<!-- テンプレート: 合計行 -->
+<template id="total-template">
+    <tr class="total-row bg-blue-50">
+        <td class="px-6 py-2 font-bold sticky left-0 bg-blue-50 z-10">
+            <span class="total-name"></span>
+        </td>
+        <!-- 月ごとの合計セルはJavaScriptで動的に生成 -->
+        <td class="px-2 py-2 whitespace-nowrap text-right font-bold">
+            <span class="grand-total"></span>
+        </td>
+    </tr>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 科目データの取得
+    fetchPLPlanningData();
+    
+    // 保存ボタンのイベント設定
+    document.getElementById('save-plan-btn').addEventListener('click', savePLPlanningData);
+});
+
+// 損益計画データの取得
+function fetchPLPlanningData() {
+    const loadingEl = document.getElementById('loading');
+    const formEl = document.getElementById('pl-planning-form');
+    
+    fetch('/business-plan/api/pl-planning')
+        .then(response => response.json())
+        .then(data => {
+            if (data.exists) {
+                renderPLPlanningForm(data);
+            } else {
+                showError('事業計画データが見つかりません。先に事業計画を作成してください。');
+            }
+        })
+        .catch(error => {
+            console.error('データの取得に失敗しました:', error);
+            showError('データの取得に失敗しました。ページを再読み込みしてください。');
+        })
+        .finally(() => {
+            loadingEl.classList.add('hidden');
+            formEl.classList.remove('hidden');
+        });
+}
+
+// 損益計画フォームの描画
+function renderPLPlanningForm(data) {
+    const months = data.months;
+    const items = data.items;
+    
+    // 月ヘッダーの生成
+    renderMonthHeaders(months);
+    
+    // 項目の生成（サブカテゴリごとにグループ化）
+    const container = document.getElementById('pl-items-container');
+    container.innerHTML = '';
+    
+    // 項目をサブカテゴリ別に整理
+    let itemsByCategory = {};
+    items.forEach(item => {
+        if (!itemsByCategory[item.category]) {
+            itemsByCategory[item.category] = [];
+        }
+        itemsByCategory[item.category].push(item);
+    });
+    
+    // カテゴリごとに項目を描画
+    for (const [category, categoryItems] of Object.entries(itemsByCategory)) {
+        // カテゴリヘッダーの追加
+        const categoryTemplate = document.getElementById('category-template').content.cloneNode(true);
+        categoryTemplate.querySelector('.category-name').textContent = getCategoryDisplayName(category);
+        container.appendChild(categoryTemplate);
+        
+        // カテゴリ内の項目を追加
+        let categoryTotal = Array(months.length).fill(0);
+        
+        categoryItems.forEach(item => {
+            const itemRow = renderItemRow(item, months);
+            container.appendChild(itemRow);
+            
+            // カテゴリ合計の計算
+            if (item.item_type !== 'calculation') {
+                months.forEach((month, idx) => {
+                    categoryTotal[idx] += (item.months[month] || 0);
+                });
+            }
+        });
+        
+        // カテゴリ小計行の追加
+        const totalTemplate = document.getElementById('total-template').content.cloneNode(true);
+        totalTemplate.querySelector('.total-name').textContent = `${getCategoryDisplayName(category)} 小計`;
+        
+        const totalRow = totalTemplate.querySelector('.total-row');
+        
+        // 月ごとの小計を追加
+        let grandTotal = 0;
+        months.forEach((month, idx) => {
+            const totalCell = document.createElement('td');
+            totalCell.className = 'px-2 py-2 whitespace-nowrap text-right font-bold';
+            totalCell.innerHTML = `<span>${formatCurrency(categoryTotal[idx])}</span>`;
+            
+            // 小計行に合計セルを追加
+            totalRow.insertBefore(totalCell, totalRow.lastElementChild);
+            
+            grandTotal += categoryTotal[idx];
+        });
+        
+        // 総合計の設定
+        totalTemplate.querySelector('.grand-total').textContent = formatCurrency(grandTotal);
+        
+        container.appendChild(totalTemplate);
+    }
+    
+    // 入力フィールドの変更イベントを設定
+    setupInputChangeHandlers();
+}
+
+// 月ヘッダーの生成
+function renderMonthHeaders(months) {
+    const headerRow = document.querySelector('thead tr');
+    const monthHeadersCell = document.getElementById('month-headers');
+    headerRow.removeChild(monthHeadersCell);
+    
+    months.forEach(month => {
+        const th = document.createElement('th');
+        th.className = 'px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider';
+        th.textContent = formatMonth(month);
+        headerRow.insertBefore(th, headerRow.lastElementChild);
+    });
+}
+
+// 項目行の生成
+function renderItemRow(item, months) {
+    const template = document.getElementById('item-template').content.cloneNode(true);
+    const row = template.querySelector('.item-row');
+    
+    // 項目ID属性の設定
+    row.setAttribute('data-item-id', item.id || '');
+    row.setAttribute('data-item-type', item.item_type || 'normal');
+    
+    // 親項目IDがある場合は属性として設定
+    if (item.parent_id) {
+        row.setAttribute('data-parent-id', item.parent_id);
+    }
+    
+    // 項目名の設定
+    template.querySelector('.item-name').textContent = item.name;
+    
+    // 入力タイプに応じたスタイル設定
+    if (item.item_type === 'header') {
+        row.classList.add('bg-gray-50', 'font-semibold');
+    } else if (item.item_type === 'calculation') {
+        row.classList.add('bg-gray-50', 'font-semibold', 'text-blue-700');
+    }
+    
+    // 月ごとの入力セルを生成
+    let total = 0;
+    months.forEach(month => {
+        const amount = item.months[month] || 0;
+        total += amount;
+        
+        const cell = document.createElement('td');
+        cell.className = 'px-2 py-2 whitespace-nowrap';
+        
+        if (item.item_type === 'normal') {
+            // 通常項目の場合は入力フィールドを生成
+            cell.innerHTML = `
+                <input type="text" 
+                       class="month-input w-full text-right border border-gray-300 rounded px-2 py-1"
+                       data-month="${month}" 
+                       value="${formatNumber(amount)}"
+                       ${item.item_type === 'calculation' ? 'readonly' : ''}>
+            `;
+        } else {
+            // ヘッダー項目や計算項目の場合は表示のみ
+            cell.classList.add('text-right');
+            cell.innerHTML = `<span>${formatCurrency(amount)}</span>`;
+        }
+        
+        row.insertBefore(cell, row.lastElementChild);
+    });
+    
+    // 合計額の設定
+    template.querySelector('.item-total').textContent = formatCurrency(total);
+    
+    return template;
+}
+
+// 入力変更ハンドラのセットアップ
+function setupInputChangeHandlers() {
+    const inputs = document.querySelectorAll('.month-input');
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            // 入力値を数値に変換（カンマを削除して変換）
+            const value = parseFloat(this.value.replace(/,/g, '')) || 0;
+            
+            // 入力値を整形して表示
+            this.value = formatNumber(value);
+            
+            // 行の合計を再計算
+            recalculateRowTotal(this.closest('tr'));
+            
+            // 関連する計算項目（合計や利益など）を再計算
+            recalculateCalculatedItems();
+        });
+    });
+}
+
+// 行合計の再計算
+function recalculateRowTotal(row) {
+    const inputs = row.querySelectorAll('.month-input');
+    let total = 0;
+    
+    inputs.forEach(input => {
+        const value = parseFloat(input.value.replace(/,/g, '')) || 0;
+        total += value;
+    });
+    
+    row.querySelector('.item-total').textContent = formatCurrency(total);
+}
+
+// 計算項目の再計算
+function recalculateCalculatedItems() {
+    // サンプル実装 - 本番では実際の計算ロジックを実装する必要がある
+    // 例えば、売上総利益 = 売上高 - 売上原価 など
+    
+    // TODO: 具体的な計算ロジックを実装
+}
+
+// 損益計画データの保存
+function savePLPlanningData() {
+    // 保存ボタンを無効化して連打防止
+    const saveButton = document.getElementById('save-plan-btn');
+    saveButton.disabled = true;
+    saveButton.textContent = '保存中...';
+    
+    // フォームからデータを取得
+    const formData = collectFormData();
+    
+    // サーバーにデータを送信
+    fetch('/business-plan/api/pl-planning', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('保存に失敗しました:', error);
+        showError('保存に失敗しました。再度お試しください。');
+    })
+    .finally(() => {
+        // ボタンを元に戻す
+        saveButton.disabled = false;
+        saveButton.textContent = '変更を保存';
+    });
+}
+
+// フォームからデータを収集
+function collectFormData() {
+    const items = [];
+    const rows = document.querySelectorAll('.item-row');
+    
+    rows.forEach(row => {
+        const itemId = row.getAttribute('data-item-id');
+        const itemType = row.getAttribute('data-item-type');
+        const parentId = row.getAttribute('data-parent-id');
+        
+        const item = {
+            id: itemId ? parseInt(itemId) : null,
+            parent_id: parentId ? parseInt(parentId) : null,
+            temp_id: itemId ? null : `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            category: getCategoryFromRow(row),
+            item_type: itemType,
+            name: row.querySelector('.item-name').textContent,
+            months: {}
+        };
+        
+        // 月別データの収集
+        const inputs = row.querySelectorAll('.month-input');
+        inputs.forEach(input => {
+            const month = input.getAttribute('data-month');
+            const value = parseFloat(input.value.replace(/,/g, '')) || 0;
+            item.months[month] = value;
+        });
+        
+        items.push(item);
+    });
+    
+    return { items };
+}
+
+// 行からカテゴリを取得
+function getCategoryFromRow(row) {
+    // 前の行がカテゴリヘッダーならそのテキストを返す
+    let prevRow = row.previousElementSibling;
+    while (prevRow) {
+        if (prevRow.classList.contains('category-header')) {
+            const categoryName = prevRow.querySelector('.category-name').textContent;
+            return getCategoryCodeFromName(categoryName);
+        }
+        prevRow = prevRow.previousElementSibling;
+    }
+    
+    return 'unknown';
+}
+
+// カテゴリ表示名からコードに変換
+function getCategoryCodeFromName(displayName) {
+    const categoryMap = {
+        '売上高': 'revenue',
+        '売上原価': 'cost_of_sales',
+        '販売費及び一般管理費': 'operating_expenses',
+        '営業外収益': 'non_operating_income',
+        '営業外費用': 'non_operating_expenses',
+        '特別利益': 'extraordinary_income',
+        '特別損失': 'extraordinary_losses'
+    };
+    
+    return categoryMap[displayName] || 'unknown';
+}
+
+// カテゴリコードから表示名に変換
+function getCategoryDisplayName(code) {
+    const displayMap = {
+        'revenue': '売上高',
+        'cost_of_sales': '売上原価',
+        'operating_expenses': '販売費及び一般管理費',
+        'non_operating_income': '営業外収益',
+        'non_operating_expenses': '営業外費用',
+        'extraordinary_income': '特別利益',
+        'extraordinary_losses': '特別損失'
+    };
+    
+    return displayMap[code] || code;
+}
+
+// ユーティリティ関数
+function formatMonth(monthStr) {
+    const date = new Date(monthStr + '-01');
+    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short' });
+}
+
+function formatNumber(num) {
+    return num.toLocaleString('ja-JP');
+}
+
+function formatCurrency(num) {
+    return num.toLocaleString('ja-JP') + ' 円';
+}
+
+function showError(message) {
+    const errorEl = document.getElementById('error-message');
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+    
+    // 5秒後に自動で非表示
+    setTimeout(() => {
+        errorEl.classList.add('hidden');
+    }, 5000);
+}
+
+function showSuccess(message) {
+    const successEl = document.getElementById('success-message');
+    successEl.textContent = message;
+    successEl.classList.remove('hidden');
+    
+    // 5秒後に自動で非表示
+    setTimeout(() => {
+        successEl.classList.add('hidden');
+    }, 5000);
+}
+</script>
+{% endblock %} 

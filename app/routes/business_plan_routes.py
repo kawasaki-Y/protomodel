@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, current_app
-from app.models.models import db, BusinessPlan, BusinessPlanItem
+from app.models.models import db, BusinessPlan, BusinessPlanItem, AccountItem
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from datetime import datetime
@@ -25,6 +25,14 @@ def items():
 def next():
     """次年度計画ページ"""
     return render_template('business_plan/next.html')
+
+@business_plan_bp.route('/create', methods=['GET'])
+@login_required
+def create():
+    """事業計画作成画面（GETリクエスト用）"""
+    # 現在のページにリダイレクト
+    flash('新しい事業計画を作成します。', 'info')
+    return redirect(url_for('business_plan.current'))
 
 @business_plan_bp.route('/create', methods=['POST'])
 @login_required
@@ -354,4 +362,168 @@ def api_delete_plan_item(item_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"項目削除エラー: {str(e)}")
-        return jsonify({'success': False, 'message': f'削除エラー: {str(e)}'}), 400 
+        return jsonify({'success': False, 'message': f'削除エラー: {str(e)}'}), 400
+
+@business_plan_bp.route('/pl-planning', methods=['GET'])
+@login_required
+def pl_planning():
+    """損益計算書の数値計画入力画面"""
+    # 現在の事業計画を取得
+    business_plan = BusinessPlan.query.filter_by(user_id=current_user.id).order_by(BusinessPlan.created_at.desc()).first()
+    
+    if not business_plan:
+        flash('事業計画を先に作成してください', 'warning')
+        return redirect(url_for('business_plan.current'))
+    
+    # 勘定科目データを取得
+    account_items = AccountItem.query.order_by(AccountItem.category, AccountItem.sub_category, AccountItem.display_order).all()
+    
+    # 各区分ごとにグループ化
+    account_items_by_category = {}
+    for item in account_items:
+        if item.sub_category not in account_items_by_category:
+            account_items_by_category[item.sub_category] = []
+        account_items_by_category[item.sub_category].append(item)
+    
+    return render_template('business_plan/pl_planning.html', 
+                          title='損益計算書 数値計画入力',
+                          business_plan=business_plan,
+                          account_items_by_category=account_items_by_category)
+
+@business_plan_bp.route('/api/pl-planning', methods=['GET'])
+@login_required
+def get_pl_planning_data():
+    """損益計算書の数値計画データを取得するAPI"""
+    # 現在の事業計画を取得
+    business_plan = BusinessPlan.query.filter_by(user_id=current_user.id).order_by(BusinessPlan.created_at.desc()).first()
+    
+    if not business_plan:
+        return jsonify({'exists': False})
+    
+    # 該当する事業計画の項目を取得
+    plan_items = BusinessPlanItem.query.filter_by(business_plan_id=business_plan.id).all()
+    
+    # 結果をJSONで返す
+    result = {
+        'exists': True,
+        'year': business_plan.year,
+        'months': business_plan.months,
+        'items': []
+    }
+    
+    for item in plan_items:
+        item_data = {
+            'id': item.id,
+            'parent_id': item.parent_id,
+            'category': item.category,
+            'item_type': item.item_type,
+            'name': item.name,
+            'description': item.description,
+            'sort_order': item.sort_order,
+            'months': {}
+        }
+        
+        # 月別データを追加
+        for i, month in enumerate(business_plan.months, 1):
+            month_index = i % 12 if i % 12 != 0 else 12
+            item_data['months'][month] = item.get_month_amount(month_index)
+        
+        result['items'].append(item_data)
+    
+    return jsonify(result)
+
+@business_plan_bp.route('/api/pl-planning', methods=['POST'])
+@login_required
+def save_pl_planning_data():
+    """損益計算書の数値計画データを保存するAPI"""
+    data = request.json
+    
+    # 現在の事業計画を取得
+    business_plan = BusinessPlan.query.filter_by(user_id=current_user.id).order_by(BusinessPlan.created_at.desc()).first()
+    
+    if not business_plan:
+        return jsonify({'success': False, 'message': '事業計画が見つかりません'}), 404
+    
+    try:
+        # 既存のアイテムを更新/削除し、新規アイテムを追加
+        item_data = data.get('items', [])
+        
+        # 既存の事業計画項目を取得
+        existing_items = {item.id: item for item in BusinessPlanItem.query.filter_by(business_plan_id=business_plan.id).all()}
+        
+        # 送信されたIDリスト
+        submitted_ids = [item.get('id') for item in item_data if item.get('id')]
+        
+        # データベースにあるが送信されていないIDを削除
+        for item_id, item in existing_items.items():
+            if item_id not in submitted_ids:
+                db.session.delete(item)
+        
+        # 新規アイテムの親子関係マッピング用
+        id_mapping = {}
+        
+        # 各アイテムを処理
+        for item in item_data:
+            item_id = item.get('id')
+            temp_id = item.get('temp_id')  # 新規アイテム識別用の一時ID
+            
+            # 月別データの取得
+            month_data = item.get('months', {})
+            
+            if item_id and item_id in existing_items:
+                # 既存アイテムの更新
+                existing_item = existing_items[item_id]
+                existing_item.category = item.get('category')
+                existing_item.item_type = item.get('item_type')
+                existing_item.name = item.get('name')
+                existing_item.description = item.get('description', '')
+                existing_item.sort_order = item.get('sort_order', 0)
+                
+                # 親IDの処理（新規アイテムの親の場合）
+                parent_id = item.get('parent_id')
+                if parent_id in id_mapping:
+                    existing_item.parent_id = id_mapping[parent_id]
+                else:
+                    existing_item.parent_id = parent_id
+                
+                # 月別データの更新
+                for i, month in enumerate(business_plan.months, 1):
+                    month_index = i % 12 if i % 12 != 0 else 12
+                    month_amount = month_data.get(month, 0)
+                    existing_item.set_month_amount(month_index, month_amount)
+                
+            else:
+                # 新規アイテムの追加
+                parent_id = item.get('parent_id')
+                if parent_id and parent_id in id_mapping:
+                    parent_id = id_mapping[parent_id]
+                
+                new_item = BusinessPlanItem(
+                    business_plan_id=business_plan.id,
+                    parent_id=parent_id,
+                    category=item.get('category'),
+                    item_type=item.get('item_type'),
+                    name=item.get('name'),
+                    description=item.get('description', ''),
+                    sort_order=item.get('sort_order', 0)
+                )
+                
+                # 月別データの設定
+                for i, month in enumerate(business_plan.months, 1):
+                    month_index = i % 12 if i % 12 != 0 else 12
+                    month_amount = month_data.get(month, 0)
+                    new_item.set_month_amount(month_index, month_amount)
+                
+                db.session.add(new_item)
+                db.session.flush()  # 一時的にコミットして新しいIDを取得
+                
+                # 親子関係マッピング用に一時IDと実際のIDを記録
+                if temp_id:
+                    id_mapping[temp_id] = new_item.id
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': '数値計画を保存しました'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'保存に失敗しました: {str(e)}'}), 500 

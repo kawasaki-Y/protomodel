@@ -1,76 +1,112 @@
 {% extends "base.html" %}
 
-{% block page_title %}事業計画{% endblock %}
+{% block title %}事業計画{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
-    <!-- ヘッダー部分 -->
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">事業計画</h1>
-        <div class="flex space-x-2">
-            <button id="create-plan-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">
-                <i class="fas fa-plus mr-2"></i>新規作成
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">事業計画</h1>
+        <form action="{{ url_for('business_plan.create_plan') }}" method="post" class="d-inline">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i>新規作成
             </button>
-            <button id="print-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow">
-                <i class="fas fa-print mr-2"></i>印刷
-            </button>
-        </div>
+        </form>
     </div>
 
     <!-- 事業計画がない場合のメッセージ -->
-    <div id="no-plan-message" class="hidden bg-white shadow-md rounded-lg p-6 mb-6">
-        <div class="text-center">
-            <i class="fas fa-file-invoice-dollar text-gray-400 text-5xl mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-800 mb-2">事業計画がありません</h3>
-            <p class="text-gray-600 mb-4">事業計画を作成して、年間の収支計画を管理しましょう。</p>
-            <button id="create-first-plan-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md shadow-sm">
-                <i class="fas fa-plus mr-2"></i>事業計画を作成する
-            </button>
+    <div id="no-plan-message" class="d-none">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <h3 class="card-title mb-3">事業計画が作成されていません</h3>
+                <p class="card-text mb-4">現在登録されている事業計画はありません。新規作成ボタンから事業計画を作成してください。</p>
+                <form action="{{ url_for('business_plan.create_plan') }}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-1"></i>事業計画を作成する
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- 事業計画表示部分 -->
-    <div id="plan-content" class="hidden">
-        <!-- 計画概要 -->
-        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">
-                <span id="plan-year"></span>年度 事業計画
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="text-md font-medium text-gray-700 mb-2">期間</h3>
-                    <p class="text-gray-900"><span id="plan-period"></span></p>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="text-md font-medium text-gray-700 mb-2">売上計画</h3>
-                    <p class="text-gray-900"><span id="plan-sales"></span>円</p>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="text-md font-medium text-gray-700 mb-2">利益計画</h3>
-                    <p class="text-gray-900"><span id="plan-profit"></span>円</p>
+    <div id="plan-content" class="d-none">
+        <!-- ビジネスプラン概要 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">ビジネスプラン概要</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">事業年度</label>
+                            <p class="form-control-static" id="business-year">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">計画期間</label>
+                            <p class="form-control-static" id="business-period">-</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">売上計画</label>
+                            <p class="form-control-static" id="revenue-total">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">利益計画</label>
+                            <p class="form-control-static" id="profit-total">-</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 収支計画表 -->
-        <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-            <div class="p-6 border-b border-gray-200">
-                <h3 class="text-xl font-semibold text-gray-800">事業計画詳細</h3>
-                <p class="text-gray-600">月別収支計画（単位：円）</p>
+        <!-- 月次推移テーブル -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">損益計算書 月次推移</h5>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white">
-                    <thead>
-                        <tr>
-                            <th class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-left w-1/4">科目</th>
-                            <th id="month-header-total" class="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right">年間合計</th>
-                            <!-- 月別ヘッダーはJavaScriptで動的に生成 -->
-                        </tr>
-                    </thead>
-                    <tbody id="plan-table-body">
-                        <!-- JavaScript で動的に生成 -->
-                    </tbody>
-                </table>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" id="planItemsTable">
+                        <thead>
+                            <tr id="monthHeaderRow">
+                                <th style="min-width: 200px;">科目</th>
+                                <th style="min-width: 100px;">年間合計</th>
+                                <!-- 月別のヘッダーはJavaScriptで動的に生成 -->
+                            </tr>
+                        </thead>
+                        <tbody id="planItemsBody">
+                            <!-- JavaScriptで動的に生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 収益指標グラフ -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">主要収益指標グラフ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8 mb-4">
+                        <div style="height: 350px;">
+                            <canvas id="revenue-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div style="height: 350px;">
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div style="height: 250px;">
+                            <canvas id="profit-ratio-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -89,6 +125,9 @@
         </div>
     </div>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <!-- JavaScript -->
 <script>
@@ -138,18 +177,30 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.exists) {
-                    // 事業計画が存在する場合、計画の詳細情報を取得
-                    showPlanContent();
-                    updatePlanSummary(data);
+                    // 事業計画が存在する場合の処理
+                    document.getElementById('no-plan-message').classList.add('d-none');
+                    document.getElementById('plan-content').classList.remove('d-none');
+                    
+                    // 事業計画の基本情報を表示
+                    document.getElementById('business-year').textContent = data.year + '年度';
+                    document.getElementById('business-period').textContent = 
+                        data.start_month + ' 〜 ' + data.end_month;
+                    
+                    // 事業計画項目のデータを取得して表示
                     fetchPlanItems();
                 } else {
-                    // 事業計画がない場合、メッセージを表示
-                    showNoPlanMessage();
+                    // 事業計画がない場合の処理
+                    document.getElementById('no-plan-message').classList.remove('d-none');
+                    document.getElementById('plan-content').classList.add('d-none');
                 }
             })
             .catch(error => {
-                console.error('事業計画の取得に失敗しました:', error);
-                showNoPlanMessage();
+                console.error('事業計画データの取得に失敗しました:', error);
+                // エラーメッセージを表示
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger';
+                alertDiv.textContent = 'データの取得中にエラーが発生しました。ページを再読み込みしてください。';
+                document.querySelector('.container').prepend(alertDiv);
             });
     }
     
@@ -165,6 +216,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderPlanItems(data.items);
                     // 売上・利益の合計を計算して表示
                     calculateTotals(data.items);
+                    // グラフを描画
+                    renderCharts(data.months, data.items);
                 }
             })
             .catch(error => {
@@ -172,99 +225,85 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    // 事業計画がない場合のメッセージを表示
-    function showNoPlanMessage() {
-        noPlanMessage.classList.remove('hidden');
-        planContent.classList.add('hidden');
-    }
-    
-    // 事業計画内容を表示
-    function showPlanContent() {
-        noPlanMessage.classList.add('hidden');
-        planContent.classList.remove('hidden');
-    }
-    
-    // 事業計画の概要情報を更新
-    function updatePlanSummary(planData) {
-        document.getElementById('plan-year').textContent = planData.year;
-        document.getElementById('plan-period').textContent = `${planData.start_month} 〜 ${planData.end_month}`;
-    }
-    
-    // 月別ヘッダーを生成
+    // 月別ヘッダーを生成する関数
     function generateMonthHeaders(months) {
-        const headerRow = document.querySelector('thead tr');
-        const totalHeader = document.getElementById('month-header-total');
+        const headerRow = document.getElementById('monthHeaderRow');
         
-        // 既存の月ヘッダーをクリア（合計ヘッダーを除く）
-        while (headerRow.childElementCount > 2) {
+        // 既存のヘッダーをクリア（科目と年間合計は残す）
+        while (headerRow.children.length > 2) {
             headerRow.removeChild(headerRow.lastChild);
         }
         
-        // 月ヘッダーを生成
+        // 月別ヘッダーを追加
         months.forEach(month => {
             const th = document.createElement('th');
-            th.className = 'py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 text-right';
-            th.textContent = month.replace('-', '/');
+            th.textContent = month;
             headerRow.appendChild(th);
         });
     }
     
-    // 事業計画項目を表示
+    // 事業計画項目を表示する関数
     function renderPlanItems(items) {
-        const tableBody = document.getElementById('plan-table-body');
+        const tableBody = document.getElementById('planItemsBody');
         tableBody.innerHTML = '';
         
+        // カテゴリーごとに項目を表示
         items.forEach(category => {
-            // カテゴリ行（親項目）
+            // カテゴリー行
             const categoryRow = document.createElement('tr');
-            categoryRow.className = 'bg-gray-50';
+            categoryRow.classList.add('table-secondary');
             
             const categoryNameCell = document.createElement('td');
-            categoryNameCell.className = 'py-3 px-4 font-semibold text-gray-800 border-b border-gray-200';
-            categoryNameCell.textContent = category.name;
+            categoryNameCell.textContent = category.category;
+            categoryNameCell.style.fontWeight = 'bold';
             categoryRow.appendChild(categoryNameCell);
             
             const categoryTotalCell = document.createElement('td');
-            categoryTotalCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
             categoryTotalCell.textContent = formatCurrency(category.amounts.total);
+            categoryTotalCell.style.textAlign = 'right';
+            categoryTotalCell.style.fontWeight = 'bold';
             categoryRow.appendChild(categoryTotalCell);
             
-            // 月別の金額セルを追加
+            // 月別のカテゴリー合計を表示
             for (let i = 1; i <= 12; i++) {
+                const monthCell = document.createElement('td');
                 const monthKey = `m${i}`;
                 if (monthKey in category.amounts.months) {
-                    const cell = document.createElement('td');
-                    cell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
-                    cell.textContent = formatCurrency(category.amounts.months[monthKey]);
-                    categoryRow.appendChild(cell);
+                    monthCell.textContent = formatCurrency(category.amounts.months[monthKey]);
+                } else {
+                    monthCell.textContent = '-';
                 }
+                monthCell.style.textAlign = 'right';
+                monthCell.style.fontWeight = 'bold';
+                categoryRow.appendChild(monthCell);
             }
             
             tableBody.appendChild(categoryRow);
             
-            // 子項目行
+            // 子項目を表示
             category.children.forEach(item => {
                 const itemRow = document.createElement('tr');
                 
                 const itemNameCell = document.createElement('td');
-                itemNameCell.className = 'py-3 px-4 pl-8 text-gray-700 border-b border-gray-200';
-                itemNameCell.textContent = item.name;
+                itemNameCell.textContent = '　' + item.name;
                 itemRow.appendChild(itemNameCell);
                 
                 const itemTotalCell = document.createElement('td');
-                itemTotalCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
                 itemTotalCell.textContent = formatCurrency(item.amounts.total);
+                itemTotalCell.style.textAlign = 'right';
                 itemRow.appendChild(itemTotalCell);
                 
-                // 月別の金額セルを追加
+                // 月別の項目金額を表示
                 for (let i = 1; i <= 12; i++) {
+                    const monthCell = document.createElement('td');
                     const monthKey = `m${i}`;
                     if (monthKey in item.amounts.months) {
-                        const cell = document.createElement('td');
-                        cell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
-                        cell.textContent = formatCurrency(item.amounts.months[monthKey]);
-                        itemRow.appendChild(cell);
+                        monthCell.textContent = formatCurrency(item.amounts.months[monthKey]);
+                    } else {
+                        monthCell.textContent = '-';
                     }
+                    monthCell.style.textAlign = 'right';
+                    itemRow.appendChild(monthCell);
                 }
                 
                 tableBody.appendChild(itemRow);
@@ -272,35 +311,231 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 売上・利益の合計を計算
+    // 売上と利益の合計を計算する関数
     function calculateTotals(items) {
-        let totalSales = 0;
-        let totalProfit = 0;
+        let totalRevenue = 0;
+        let totalExpense = 0;
         
         items.forEach(category => {
             if (category.category === '収益') {
-                totalSales += category.amounts.total;
+                totalRevenue = category.amounts.total;
+            } else if (category.category === '費用') {
+                totalExpense = category.amounts.total;
             }
         });
         
-        // 簡易的な利益計算（収益 - 費用）
-        let totalExpenses = 0;
-        items.forEach(category => {
-            if (category.category === '費用') {
-                totalExpenses += category.amounts.total;
-            }
-        });
+        const profit = totalRevenue - totalExpense;
+        const profitRatio = totalRevenue > 0 ? (profit / totalRevenue * 100) : 0;
         
-        totalProfit = totalSales - totalExpenses;
+        // ビジネスプラン概要の売上・利益を更新
+        const revenueTotalElement = document.getElementById('revenue-total');
+        const profitTotalElement = document.getElementById('profit-total');
         
-        // 表示更新
-        document.getElementById('plan-sales').textContent = formatCurrency(totalSales);
-        document.getElementById('plan-profit').textContent = formatCurrency(totalProfit);
+        if (revenueTotalElement) {
+            revenueTotalElement.textContent = formatCurrency(totalRevenue) + '円';
+        }
+        
+        if (profitTotalElement) {
+            profitTotalElement.textContent = formatCurrency(profit) + '円 (' + profitRatio.toFixed(1) + '%)';
+        }
     }
     
     // 通貨フォーマット関数
     function formatCurrency(value) {
         return new Intl.NumberFormat('ja-JP').format(value);
+    }
+    
+    // グラフの描画用関数
+    function renderCharts(months, items) {
+        // 月別の売上と利益のデータを抽出
+        let monthlySales = Array(12).fill(0);
+        let monthlyProfit = Array(12).fill(0);
+        let monthlyExpenses = Array(12).fill(0);
+        
+        // 売上と費用データを集計
+        items.forEach(category => {
+            if (category.category === '収益') {
+                for (let i = 1; i <= 12; i++) {
+                    const monthKey = `m${i}`;
+                    if (monthKey in category.amounts.months) {
+                        monthlySales[i-1] += category.amounts.months[monthKey];
+                    }
+                }
+            } else if (category.category === '費用') {
+                for (let i = 1; i <= 12; i++) {
+                    const monthKey = `m${i}`;
+                    if (monthKey in category.amounts.months) {
+                        monthlyExpenses[i-1] += category.amounts.months[monthKey];
+                    }
+                }
+            }
+        });
+        
+        // 利益を計算
+        monthlyProfit = monthlySales.map((sales, index) => sales - monthlyExpenses[index]);
+        
+        // 利益率を計算
+        const profitRatio = monthlySales.map((sales, index) => 
+            sales > 0 ? (monthlyProfit[index] / sales * 100) : 0);
+        
+        // 1. 売上・利益推移グラフ
+        const revenueChartCtx = document.getElementById('revenue-chart').getContext('2d');
+        new Chart(revenueChartCtx, {
+            type: 'line',
+            data: {
+                labels: months.map(month => month.replace('-', '/')),
+                datasets: [
+                    {
+                        label: '売上',
+                        data: monthlySales,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: '利益',
+                        data: monthlyProfit,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '月別売上・利益推移'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatCurrency(context.raw) + '円';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000) {
+                                    return (value / 1000000) + 'M';
+                                } else if (value >= 1000) {
+                                    return (value / 1000) + 'K';
+                                }
+                                return value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 2. カテゴリー別収益構成
+        const categoryChartCtx = document.getElementById('category-chart').getContext('2d');
+        // 収益カテゴリーの子項目のデータを集計
+        const revenueCategories = [];
+        const revenueTotals = [];
+        const backgroundColors = [
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(255, 99, 132, 0.7)',
+        ];
+        
+        // 収益の項目を抽出
+        items.forEach(category => {
+            if (category.category === '収益') {
+                category.children.forEach(item => {
+                    revenueCategories.push(item.name);
+                    revenueTotals.push(item.amounts.total);
+                });
+            }
+        });
+        
+        new Chart(categoryChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: revenueCategories,
+                datasets: [{
+                    data: revenueTotals,
+                    backgroundColor: backgroundColors.slice(0, revenueCategories.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '収益カテゴリー構成'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total * 100) * 10) / 10;
+                                return context.label + ': ' + formatCurrency(value) + '円 (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 3. 利益率推移
+        const profitRatioChartCtx = document.getElementById('profit-ratio-chart').getContext('2d');
+        new Chart(profitRatioChartCtx, {
+            type: 'bar',
+            data: {
+                labels: months.map(month => month.replace('-', '/')),
+                datasets: [{
+                    label: '利益率',
+                    data: profitRatio,
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '月別利益率'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '利益率: ' + context.raw.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 });
 </script>
