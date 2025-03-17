@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.models.models import db, BusinessPlan, PlanItem, ActualData
+from app.models.models import db, BusinessPlan, BusinessPlanItem, ActualData
 from app.routes.auth_routes import permission_required
 from sqlalchemy import and_
 import json
 from datetime import datetime
+import calendar
 
 actual_data_bp = Blueprint('actual_data', __name__, url_prefix='/actual-data')
 
@@ -34,7 +35,10 @@ def plan_actual(plan_id):
         return redirect(url_for('actual_data.index'))
     
     # 計画の全項目を階層構造で取得
-    root_items = PlanItem.query.filter_by(business_plan_id=plan_id, parent_id=None).order_by(PlanItem.sort_order).all()
+    root_items = BusinessPlanItem.query.filter_by(
+        business_plan_id=plan_id,
+        parent_id=None
+    ).order_by(BusinessPlanItem.sort_order).all()
     
     return render_template('actual_data/plan_actual.html', plan=plan, root_items=root_items)
 
@@ -55,10 +59,10 @@ def month_actual(plan_id, month):
         return redirect(url_for('actual_data.index'))
     
     # 計画の詳細項目を取得（ヘッダー項目を除く）
-    detail_items = PlanItem.query.filter_by(
+    detail_items = BusinessPlanItem.query.filter_by(
         business_plan_id=plan_id, 
         item_type='detail'
-    ).order_by(PlanItem.category, PlanItem.sort_order).all()
+    ).order_by(BusinessPlanItem.category, BusinessPlanItem.sort_order).all()
     
     # 各項目の実績データを取得
     for item in detail_items:
@@ -107,7 +111,7 @@ def save_month_actual(plan_id, month):
             notes = item_data.get('notes', '')
             
             # 該当項目が存在するか確認
-            item = PlanItem.query.get(item_id)
+            item = BusinessPlanItem.query.get(item_id)
             if not item or item.business_plan_id != plan_id:
                 continue
             
@@ -149,7 +153,7 @@ def plan_comparison(plan_id):
     summary_items = {}
     
     for category in main_categories:
-        items = PlanItem.query.filter_by(
+        items = BusinessPlanItem.query.filter_by(
             business_plan_id=plan_id,
             category=category,
             item_type='detail'
@@ -237,8 +241,8 @@ def api_chart_data(plan_id):
         return jsonify({'error': 'アクセス権限がありません'}), 403
     
     # 売上と利益のデータを取得
-    sales_items = PlanItem.query.filter_by(business_plan_id=plan_id, category='売上').all()
-    profit_items = PlanItem.query.filter_by(business_plan_id=plan_id, category='営業利益').all()
+    sales_items = BusinessPlanItem.query.filter_by(business_plan_id=plan_id, category='売上').all()
+    profit_items = BusinessPlanItem.query.filter_by(business_plan_id=plan_id, category='営業利益').all()
     
     # 月ごとのデータを準備
     months = list(range(1, 13))

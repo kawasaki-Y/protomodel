@@ -6,9 +6,16 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">収益事業一覧</h1>
-        <button id="createRevenueBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+        <button id="createRevenueBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150 ease-in-out transform hover:scale-105">
             新規作成
         </button>
+    </div>
+
+    <!-- エラー/成功メッセージ表示エリア -->
+    <div id="messageArea" class="mb-4 hidden">
+        <div class="p-4 rounded-md">
+            <p id="messageText"></p>
+        </div>
     </div>
 
     <!-- 収益事業一覧テーブル -->
@@ -34,27 +41,31 @@
     <div class="relative top-20 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <h3 class="text-lg font-medium text-gray-900" id="modalTitle">収益事業の新規作成</h3>
-            <form id="revenueForm" class="mt-4">
+            <form id="revenueForm" class="mt-4" novalidate>
                 <input type="hidden" id="modelId">
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
-                        事業名
+                        事業名 <span class="text-red-500">*</span>
                     </label>
                     <input type="text" id="name" name="name" required
-                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           minlength="2" maxlength="50">
+                    <p class="text-red-500 text-xs italic hidden" id="nameError"></p>
                 </div>
                 
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="businessType">
-                        事業タイプ
+                        事業タイプ <span class="text-red-500">*</span>
                     </label>
                     <select id="businessType" name="businessType" required
                             class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        <option value="">選択してください</option>
                         <option value="unit_sales">単価×数量</option>
                         <option value="subscription">サブスクリプション</option>
                         <option value="project">プロジェクト</option>
                         <option value="service">サービス</option>
                     </select>
+                    <p class="text-red-500 text-xs italic hidden" id="businessTypeError"></p>
                 </div>
                 
                 <div class="mb-4">
@@ -63,7 +74,8 @@
                     </label>
                     <textarea id="description" name="description"
                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                              rows="3"></textarea>
+                              rows="3" maxlength="500"></textarea>
+                    <p class="text-gray-500 text-xs" id="descriptionCount">0/500文字</p>
                 </div>
                 
                 <!-- 事業タイプ別パラメータ入力フォーム -->
@@ -73,11 +85,11 @@
                 
                 <div class="flex items-center justify-end mt-6">
                     <button type="button" id="cancelBtn"
-                            class="mr-4 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded">
+                            class="mr-4 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded transition duration-150 ease-in-out">
                         キャンセル
                     </button>
                     <button type="submit"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150 ease-in-out">
                         保存
                     </button>
                 </div>
@@ -106,28 +118,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // フォーム送信のイベントリスナー
     document.getElementById('revenueForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // バリデーション
+        if (!validateForm()) {
+            return;
+        }
+        
         const modelId = document.getElementById('modelId').value;
         const formData = {
             business_plan_id: businessPlanId,
-            name: document.getElementById('name').value,
+            name: document.getElementById('name').value.trim(),
             business_type: document.getElementById('businessType').value,
-            description: document.getElementById('description').value,
+            description: document.getElementById('description').value.trim(),
             parameters: getParametersFromForm()
         };
         
         try {
             if (modelId) {
-                // 既存モデルの更新
                 await updateRevenueModel(modelId, formData);
+                showMessage('収益事業モデルを更新しました');
             } else {
-                // 新規モデルの作成
                 await createRevenueModel(formData);
+                showMessage('収益事業モデルを作成しました');
             }
             hideModal();
             loadRevenueModels();
         } catch (error) {
             console.error('Error:', error);
-            alert('エラーが発生しました');
+            showMessage('エラーが発生しました', 'error');
         }
     });
     
@@ -200,22 +218,42 @@ function updateParameterFields(businessType, parameters = {}) {
     switch (businessType) {
         case 'unit_sales':
             container.innerHTML = `
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">単価</label>
-                    <input type="number" name="unit_price" value="${parameters.unit_price || ''}"
-                           class="shadow border rounded w-full py-2 px-3 text-gray-700">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">月間販売数量</label>
-                    <div class="grid grid-cols-4 gap-4">
-                        ${Array.from({length: 12}, (_, i) => `
-                            <div>
-                                <label class="block text-gray-700 text-xs mb-1">${i + 1}月</label>
-                                <input type="number" name="monthly_units_${i + 1}"
-                                       value="${parameters.monthly_units?.[i + 1] || ''}"
-                                       class="shadow border rounded w-full py-1 px-2 text-gray-700">
-                            </div>
-                        `).join('')}
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">単価×数量モデル設定</h4>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            単価 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-center">
+                            <input type="number" name="unit_price" value="${parameters.unit_price || ''}"
+                                   class="shadow border rounded w-full py-2 px-3 text-gray-700 mr-2"
+                                   min="0" step="1" required>
+                            <span class="text-gray-600">円</span>
+                        </div>
+                        <p class="text-red-500 text-xs italic hidden" id="unit_priceError"></p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            月間販売数量 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            ${Array.from({length: 12}, (_, i) => `
+                                <div class="relative">
+                                    <label class="block text-gray-700 text-xs mb-1">${i + 1}月</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="monthly_units_${i + 1}"
+                                               value="${parameters.monthly_units?.[i + 1] || ''}"
+                                               class="shadow border rounded w-full py-1 px-2 text-gray-700"
+                                               min="0" step="1" required>
+                                        <span class="text-gray-600 text-xs ml-1">個</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-blue-50 rounded">
+                        <h5 class="text-sm font-medium text-blue-900 mb-2">予測年間売上</h5>
+                        <p id="totalRevenue" class="text-2xl font-bold text-blue-600">0円</p>
                     </div>
                 </div>
             `;
@@ -223,53 +261,187 @@ function updateParameterFields(businessType, parameters = {}) {
             
         case 'subscription':
             container.innerHTML = `
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">月額料金</label>
-                    <input type="number" name="monthly_fee" value="${parameters.monthly_fee || ''}"
-                           class="shadow border rounded w-full py-2 px-3 text-gray-700">
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">サブスクリプションモデル設定</h4>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            月額料金 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-center">
+                            <input type="number" name="monthly_fee" value="${parameters.monthly_fee || ''}"
+                                   class="shadow border rounded w-full py-2 px-3 text-gray-700 mr-2"
+                                   min="0" step="1" required>
+                            <span class="text-gray-600">円/月</span>
+                        </div>
+                        <p class="text-red-500 text-xs italic hidden" id="monthly_feeError"></p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            月間契約者数 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            ${Array.from({length: 12}, (_, i) => `
+                                <div class="relative">
+                                    <label class="block text-gray-700 text-xs mb-1">${i + 1}月</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="subscribers_${i + 1}"
+                                               value="${parameters.subscribers?.[i + 1] || ''}"
+                                               class="shadow border rounded w-full py-1 px-2 text-gray-700"
+                                               min="0" step="1" required>
+                                        <span class="text-gray-600 text-xs ml-1">人</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-blue-50 rounded">
+                        <h5 class="text-sm font-medium text-blue-900 mb-2">予測年間売上</h5>
+                        <p id="totalRevenue" class="text-2xl font-bold text-blue-600">0円</p>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">月間契約者数</label>
-                    <div class="grid grid-cols-4 gap-4">
-                        ${Array.from({length: 12}, (_, i) => `
-                            <div>
-                                <label class="block text-gray-700 text-xs mb-1">${i + 1}月</label>
-                                <input type="number" name="subscribers_${i + 1}"
-                                       value="${parameters.subscribers?.[i + 1] || ''}"
-                                       class="shadow border rounded w-full py-1 px-2 text-gray-700">
-                            </div>
-                        `).join('')}
+            `;
+            break;
+            
+        case 'project':
+            container.innerHTML = `
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">プロジェクトモデル設定</h4>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            プロジェクト単価 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-center">
+                            <input type="number" name="project_price" value="${parameters.project_price || ''}"
+                                   class="shadow border rounded w-full py-2 px-3 text-gray-700 mr-2"
+                                   min="0" step="1" required>
+                            <span class="text-gray-600">円/件</span>
+                        </div>
+                        <p class="text-red-500 text-xs italic hidden" id="project_priceError"></p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            月間プロジェクト数 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            ${Array.from({length: 12}, (_, i) => `
+                                <div class="relative">
+                                    <label class="block text-gray-700 text-xs mb-1">${i + 1}月</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="projects_${i + 1}"
+                                               value="${parameters.projects?.[i + 1] || ''}"
+                                               class="shadow border rounded w-full py-1 px-2 text-gray-700"
+                                               min="0" step="1" required>
+                                        <span class="text-gray-600 text-xs ml-1">件</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-blue-50 rounded">
+                        <h5 class="text-sm font-medium text-blue-900 mb-2">予測年間売上</h5>
+                        <p id="totalRevenue" class="text-2xl font-bold text-blue-600">0円</p>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'service':
+            container.innerHTML = `
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">サービスモデル設定</h4>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            サービス料金 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-center">
+                            <input type="number" name="service_fee" value="${parameters.service_fee || ''}"
+                                   class="shadow border rounded w-full py-2 px-3 text-gray-700 mr-2"
+                                   min="0" step="1" required>
+                            <span class="text-gray-600">円/回</span>
+                        </div>
+                        <p class="text-red-500 text-xs italic hidden" id="service_feeError"></p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            月間利用回数 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            ${Array.from({length: 12}, (_, i) => `
+                                <div class="relative">
+                                    <label class="block text-gray-700 text-xs mb-1">${i + 1}月</label>
+                                    <div class="flex items-center">
+                                        <input type="number" name="usage_${i + 1}"
+                                               value="${parameters.usage?.[i + 1] || ''}"
+                                               class="shadow border rounded w-full py-1 px-2 text-gray-700"
+                                               min="0" step="1" required>
+                                        <span class="text-gray-600 text-xs ml-1">回</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-blue-50 rounded">
+                        <h5 class="text-sm font-medium text-blue-900 mb-2">予測年間売上</h5>
+                        <p id="totalRevenue" class="text-2xl font-bold text-blue-600">0円</p>
                     </div>
                 </div>
             `;
             break;
     }
+    
+    // パラメータ入力時の売上計算
+    setupRevenueCalculation();
 }
 
-// フォームからパラメータを取得
-function getParametersFromForm() {
+// 売上計算のセットアップ
+function setupRevenueCalculation() {
+    const inputs = document.querySelectorAll('#parameterFields input[type="number"]');
+    inputs.forEach(input => {
+        input.addEventListener('input', calculateRevenue);
+    });
+}
+
+// 売上計算
+function calculateRevenue() {
     const businessType = document.getElementById('businessType').value;
-    const parameters = {};
+    const parameters = getParametersFromForm();
+    let totalRevenue = 0;
     
     switch (businessType) {
         case 'unit_sales':
-            parameters.unit_price = parseInt(document.querySelector('[name="unit_price"]').value) || 0;
-            parameters.monthly_units = {};
-            for (let i = 1; i <= 12; i++) {
-                parameters.monthly_units[i] = parseInt(document.querySelector(`[name="monthly_units_${i}"]`).value) || 0;
+            if (parameters.unit_price) {
+                Object.values(parameters.monthly_units || {}).forEach(units => {
+                    totalRevenue += parameters.unit_price * (units || 0);
+                });
             }
             break;
             
         case 'subscription':
-            parameters.monthly_fee = parseInt(document.querySelector('[name="monthly_fee"]').value) || 0;
-            parameters.subscribers = {};
-            for (let i = 1; i <= 12; i++) {
-                parameters.subscribers[i] = parseInt(document.querySelector(`[name="subscribers_${i}"]`).value) || 0;
+            if (parameters.monthly_fee) {
+                Object.values(parameters.subscribers || {}).forEach(subscribers => {
+                    totalRevenue += parameters.monthly_fee * (subscribers || 0);
+                });
+            }
+            break;
+            
+        case 'project':
+            if (parameters.project_price) {
+                Object.values(parameters.projects || {}).forEach(projects => {
+                    totalRevenue += parameters.project_price * (projects || 0);
+                });
+            }
+            break;
+            
+        case 'service':
+            if (parameters.service_fee) {
+                Object.values(parameters.usage || {}).forEach(usage => {
+                    totalRevenue += parameters.service_fee * (usage || 0);
+                });
             }
             break;
     }
     
-    return parameters;
+    document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
 }
 
 // API呼び出し関数
@@ -343,5 +515,94 @@ function formatCurrency(amount) {
         currency: 'JPY'
     }).format(amount);
 }
+
+// メッセージ表示関数
+function showMessage(message, type = 'success') {
+    const messageArea = document.getElementById('messageArea');
+    const messageText = document.getElementById('messageText');
+    
+    messageArea.classList.remove('hidden', 'bg-green-100', 'bg-red-100');
+    messageText.classList.remove('text-green-700', 'text-red-700');
+    
+    if (type === 'success') {
+        messageArea.classList.add('bg-green-100');
+        messageText.classList.add('text-green-700');
+    } else {
+        messageArea.classList.add('bg-red-100');
+        messageText.classList.add('text-red-700');
+    }
+    
+    messageText.textContent = message;
+    messageArea.classList.remove('hidden');
+    
+    setTimeout(() => {
+        messageArea.classList.add('hidden');
+    }, 5000);
+}
+
+// フォームバリデーション
+function validateForm() {
+    let isValid = true;
+    const errors = {};
+    
+    // 事業名のバリデーション
+    const name = document.getElementById('name');
+    if (!name.value.trim()) {
+        errors.name = '事業名は必須です';
+        isValid = false;
+    } else if (name.value.length < 2) {
+        errors.name = '事業名は2文字以上で入力してください';
+        isValid = false;
+    }
+    
+    // 事業タイプのバリデーション
+    const businessType = document.getElementById('businessType');
+    if (!businessType.value) {
+        errors.businessType = '事業タイプを選択してください';
+        isValid = false;
+    }
+    
+    // パラメータのバリデーション
+    const parameters = getParametersFromForm();
+    if (businessType.value === 'unit_sales') {
+        if (!parameters.unit_price || parameters.unit_price <= 0) {
+            errors.unit_price = '有効な単価を入力してください';
+            isValid = false;
+        }
+    } else if (businessType.value === 'subscription') {
+        if (!parameters.monthly_fee || parameters.monthly_fee <= 0) {
+            errors.monthly_fee = '有効な月額料金を入力してください';
+            isValid = false;
+        }
+    }
+    
+    // エラーメッセージの表示
+    Object.keys(errors).forEach(key => {
+        const errorElement = document.getElementById(`${key}Error`);
+        if (errorElement) {
+            errorElement.textContent = errors[key];
+            errorElement.classList.remove('hidden');
+        }
+    });
+    
+    return isValid;
+}
+
+// 文字数カウント
+document.getElementById('description').addEventListener('input', (e) => {
+    const count = e.target.value.length;
+    document.getElementById('descriptionCount').textContent = `${count}/500文字`;
+});
+
+// フォームフィールドのリアルタイムバリデーション
+document.getElementById('name').addEventListener('input', (e) => {
+    const errorElement = document.getElementById('nameError');
+    if (e.target.value.trim().length < 2) {
+        errorElement.textContent = '事業名は2文字以上で入力してください';
+        errorElement.classList.remove('hidden');
+    } else {
+        errorElement.classList.add('hidden');
+    }
+});
 </script>
 {% endblock %} 

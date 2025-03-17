@@ -8,7 +8,7 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.dml.color import RGBColor
 import io
 import json
-from app.models.models import BusinessPlan, PlanItem, CashFlowPlan, CashFlowItem
+from app.models.models import BusinessPlan, BusinessPlanItem, CashFlowPlan, CashFlowItem
 from datetime import datetime
 from pptx.dml.chart import CategoryChartData
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
@@ -33,7 +33,7 @@ def export_pdf():
             return jsonify({'error': '事業計画が見つかりません'}), 404
         
         # 事業計画項目のデータを取得（階層含む）
-        items = PlanItem.query.filter_by(business_plan_id=plan_id).all()
+        items = BusinessPlanItem.query.filter_by(business_plan_id=plan_id).all()
         
         # 資金繰り計画を取得
         cash_flow_items = None
@@ -85,7 +85,7 @@ def export_ppt():
             return jsonify({'error': '事業計画が見つかりません'}), 404
         
         # 事業計画項目のデータを取得
-        items = PlanItem.query.filter_by(business_plan_id=plan_id).all()
+        items = BusinessPlanItem.query.filter_by(business_plan_id=plan_id).all()
         
         # PowerPointプレゼンテーションの作成
         prs = Presentation()

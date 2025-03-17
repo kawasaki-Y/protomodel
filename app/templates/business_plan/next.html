@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (savePlanBtn) {
         savePlanBtn.addEventListener('click', function() {
-            alert('この機能は現在開発中です。次のアップデートをお待ちください。');
+            savePlan();
         });
     }
     
@@ -256,179 +256,106 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 次年度計画テーブルを表示する関数
     function renderNextPlanTable() {
-        tableBody.innerHTML = '';
+        let html = '';
         
-        // 各カテゴリ（親項目）を処理
         nextPlanData.items.forEach(category => {
-            // カテゴリ行（親項目）
-            const categoryRow = document.createElement('tr');
-            categoryRow.className = 'bg-gray-50';
+            // 親項目の行
+            html += `
+                <tr class="bg-gray-50">
+                    <td class="py-2 px-4 font-medium">${category.name}</td>
+                    <td class="py-2 px-4 text-right">${formatCurrency(category.current_total)}</td>
+                    <td class="py-2 px-4 text-right">${formatCurrency(category.next_total)}</td>
+                    <td class="py-2 px-4 text-right">${formatGrowthRate(category.growth_rate)}</td>
+                    <td class="py-2 px-4 text-right">${formatCurrency(category.difference)}</td>
+                </tr>
+            `;
             
-            const categoryNameCell = document.createElement('td');
-            categoryNameCell.className = 'py-3 px-4 font-semibold text-gray-800 border-b border-gray-200';
-            categoryNameCell.textContent = category.name;
-            categoryRow.appendChild(categoryNameCell);
-            
-            const categoryCurrTotalCell = document.createElement('td');
-            categoryCurrTotalCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
-            categoryCurrTotalCell.textContent = formatCurrency(category.current_total);
-            categoryRow.appendChild(categoryCurrTotalCell);
-            
-            const categoryNextTotalCell = document.createElement('td');
-            categoryNextTotalCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
-            
-            const categoryNextTotalInput = document.createElement('input');
-            categoryNextTotalInput.type = 'number';
-            categoryNextTotalInput.className = 'w-32 text-right px-2 py-1 border border-gray-300 rounded font-semibold';
-            categoryNextTotalInput.value = category.next_total;
-            categoryNextTotalInput.dataset.categoryId = category.id;
-            categoryNextTotalInput.dataset.isCategory = 'true';
-            categoryNextTotalInput.addEventListener('change', handleAmountChange);
-            categoryNextTotalCell.appendChild(categoryNextTotalInput);
-            
-            categoryRow.appendChild(categoryNextTotalCell);
-            
-            const categoryGrowthCell = document.createElement('td');
-            categoryGrowthCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
-            categoryGrowthCell.textContent = formatGrowthRate(category.growth_rate);
-            categoryRow.appendChild(categoryGrowthCell);
-            
-            const categoryDiffCell = document.createElement('td');
-            categoryDiffCell.className = 'py-3 px-4 text-right font-semibold text-gray-800 border-b border-gray-200';
-            categoryDiffCell.textContent = formatCurrency(category.difference);
-            categoryRow.appendChild(categoryDiffCell);
-            
-            tableBody.appendChild(categoryRow);
-            
-            // 子項目行
+            // 子項目の行
             category.children.forEach(child => {
-                const childRow = document.createElement('tr');
-                
-                const childNameCell = document.createElement('td');
-                childNameCell.className = 'py-3 px-4 pl-8 text-gray-700 border-b border-gray-200';
-                childNameCell.textContent = child.name;
-                childRow.appendChild(childNameCell);
-                
-                const childCurrTotalCell = document.createElement('td');
-                childCurrTotalCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
-                childCurrTotalCell.textContent = formatCurrency(child.current_total);
-                childRow.appendChild(childCurrTotalCell);
-                
-                const childNextTotalCell = document.createElement('td');
-                childNextTotalCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
-                
-                const childNextTotalInput = document.createElement('input');
-                childNextTotalInput.type = 'number';
-                childNextTotalInput.className = 'w-32 text-right px-2 py-1 border border-gray-300 rounded';
-                childNextTotalInput.value = child.next_total;
-                childNextTotalInput.dataset.itemId = child.id;
-                childNextTotalInput.dataset.categoryId = category.id;
-                childNextTotalInput.addEventListener('change', handleAmountChange);
-                childNextTotalCell.appendChild(childNextTotalInput);
-                
-                childRow.appendChild(childNextTotalCell);
-                
-                const childGrowthCell = document.createElement('td');
-                childGrowthCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
-                childGrowthCell.textContent = formatGrowthRate(child.growth_rate);
-                childRow.appendChild(childGrowthCell);
-                
-                const childDiffCell = document.createElement('td');
-                childDiffCell.className = 'py-3 px-4 text-right text-gray-700 border-b border-gray-200';
-                childDiffCell.textContent = formatCurrency(child.difference);
-                childRow.appendChild(childDiffCell);
-                
-                tableBody.appendChild(childRow);
+                html += `
+                    <tr>
+                        <td class="py-2 px-4 pl-8">${child.name}</td>
+                        <td class="py-2 px-4 text-right">${formatCurrency(child.current_total)}</td>
+                        <td class="py-2 px-4 text-right">${formatCurrency(child.next_total)}</td>
+                        <td class="py-2 px-4 text-right">${formatGrowthRate(child.growth_rate)}</td>
+                        <td class="py-2 px-4 text-right">${formatCurrency(child.difference)}</td>
+                    </tr>
+                `;
             });
         });
-    }
-    
-    // 金額変更時の処理
-    function handleAmountChange(event) {
-        const input = event.target;
-        const newValue = parseInt(input.value) || 0;
         
-        if (input.dataset.isCategory === 'true') {
-            // 親項目の場合
-            const categoryId = input.dataset.categoryId;
-            const category = nextPlanData.items.find(item => item.id == categoryId);
-            
-            if (category) {
-                category.next_total = newValue;
-                category.difference = newValue - category.current_total;
-                category.growth_rate = calculateGrowthRate(category.current_total, newValue);
-                
-                // 子項目に成長率を均等に適用
-                const totalChildrenCount = category.children.length;
-                if (totalChildrenCount > 0) {
-                    category.children.forEach(child => {
-                        child.growth_rate = category.growth_rate;
-                        child.next_total = Math.round(child.current_total * (1 + child.growth_rate / 100));
-                        child.difference = child.next_total - child.current_total;
-                    });
-                }
-            }
-        } else {
-            // 子項目の場合
-            const itemId = input.dataset.itemId;
-            const categoryId = input.dataset.categoryId;
-            const category = nextPlanData.items.find(item => item.id == categoryId);
-            
-            if (category) {
-                const child = category.children.find(child => child.id == itemId);
-                
-                if (child) {
-                    child.next_total = newValue;
-                    child.difference = newValue - child.current_total;
-                    child.growth_rate = calculateGrowthRate(child.current_total, newValue);
-                    
-                    // 親項目の合計を再計算
-                    updateCategoryTotal(category);
-                }
-            }
-        }
-        
-        // 表示を更新
-        renderNextPlanTable();
-        calculateTotals();
-    }
-    
-    // 親項目の合計を更新
-    function updateCategoryTotal(category) {
-        let totalAmount = 0;
-        category.children.forEach(child => {
-            totalAmount += child.next_total;
-        });
-        
-        category.next_total = totalAmount;
-        category.difference = totalAmount - category.current_total;
-        category.growth_rate = calculateGrowthRate(category.current_total, totalAmount);
+        tableBody.innerHTML = html;
     }
     
     // 成長率を適用する関数
-    function applyGrowthRate(categoryType, rate) {
-        nextPlanData.items.forEach(category => {
-            if (category.category === categoryType) {
+    function applyGrowthRate(category, rate) {
+        nextPlanData.items.forEach(item => {
+            if (item.category === category) {
                 // 親項目に成長率を適用
-                category.growth_rate = rate;
-                category.next_total = Math.round(category.current_total * (1 + rate / 100));
-                category.difference = category.next_total - category.current_total;
+                item.next_total = Math.round(item.current_total * (1 + rate / 100));
+                item.growth_rate = rate;
+                item.difference = item.next_total - item.current_total;
                 
-                // 子項目に成長率を適用
-                category.children.forEach(child => {
-                    child.growth_rate = rate;
+                // 子項目に同じ成長率を適用
+                item.children.forEach(child => {
                     child.next_total = Math.round(child.current_total * (1 + rate / 100));
+                    child.growth_rate = rate;
                     child.difference = child.next_total - child.current_total;
                 });
             }
         });
         
-        // 表示を更新
+        // テーブルを更新
         renderNextPlanTable();
+        // 合計を再計算
         calculateTotals();
     }
     
-    // 売上と利益の合計を計算して表示
+    // 次年度計画を保存する関数
+    function savePlan() {
+        fetch('/business-plan/api/next-plan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(nextPlanData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 成功メッセージを表示
+                showMessage('success', data.message);
+                // 3秒後にダッシュボードにリダイレクト
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 3000);
+            } else {
+                // エラーメッセージを表示
+                showMessage('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('保存中にエラーが発生しました:', error);
+            showMessage('error', '保存中にエラーが発生しました。');
+        });
+    }
+    
+    // メッセージを表示する関数
+    function showMessage(type, message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`;
+        messageDiv.textContent = message;
+        document.body.appendChild(messageDiv);
+        
+        // 3秒後にメッセージを消す
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+    
+    // 合計を計算する関数
     function calculateTotals() {
         let totalSales = 0;
         let totalProfit = 0;

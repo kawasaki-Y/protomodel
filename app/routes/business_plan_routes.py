@@ -526,4 +526,175 @@ def save_pl_planning_data():
     
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'保存に失敗しました: {str(e)}'}), 500 
+        return jsonify({'success': False, 'message': f'保存に失敗しました: {str(e)}'}), 500
+
+@business_plan_bp.route('/api/current-plan')
+@login_required
+def get_current_plan():
+    """現在の事業計画の基本情報を取得するAPI"""
+    current_plan = BusinessPlan.query.filter_by(
+        user_id=current_user.id,
+        is_next_year=False
+    ).order_by(BusinessPlan.created_at.desc()).first()
+
+    if current_plan:
+        return jsonify({
+            'exists': True,
+            'year': current_plan.fiscal_year,
+            'id': current_plan.id,
+            'name': current_plan.name
+        })
+    return jsonify({'exists': False})
+
+@business_plan_bp.route('/api/plan-items')
+@login_required
+def get_plan_items():
+    """事業計画の項目を取得するAPI"""
+    current_plan = BusinessPlan.query.filter_by(
+        user_id=current_user.id,
+        is_next_year=False
+    ).order_by(BusinessPlan.created_at.desc()).first()
+
+    if not current_plan:
+        return jsonify({'exists': False})
+
+    items = BusinessPlanItem.query.filter_by(
+        business_plan_id=current_plan.id
+    ).order_by(BusinessPlanItem.sort_order).all()
+
+    # 項目を階層構造に整理
+    item_dict = {}
+    root_items = []
+
+    for item in items:
+        item_data = {
+            'id': item.id,
+            'name': item.name,
+            'category': item.category,
+            'item_type': item.item_type,
+            'sort_order': item.sort_order,
+            'amounts': {
+                'total': item.total_amount,
+                'monthly': [
+                    item.m1_amount, item.m2_amount, item.m3_amount,
+                    item.m4_amount, item.m5_amount, item.m6_amount,
+                    item.m7_amount, item.m8_amount, item.m9_amount,
+                    item.m10_amount, item.m11_amount, item.m12_amount
+                ]
+            },
+            'children': []
+        }
+        item_dict[item.id] = item_data
+
+        if item.parent_id is None:
+            root_items.append(item_data)
+        else:
+            parent = item_dict.get(item.parent_id)
+            if parent:
+                parent['children'].append(item_data)
+
+    return jsonify({
+        'exists': True,
+        'items': root_items
+    })
+
+@business_plan_bp.route('/api/next-plan', methods=['POST'])
+@login_required
+def save_next_plan():
+    """次年度計画を保存するAPI"""
+    data = request.get_json()
+    
+    # 現在の事業計画を取得
+    current_plan = BusinessPlan.query.filter_by(
+        user_id=current_user.id,
+        is_next_year=False
+    ).order_by(BusinessPlan.created_at.desc()).first()
+
+    if not current_plan:
+        return jsonify({
+            'success': False,
+            'message': '現在の事業計画が見つかりません。'
+        }), 404
+
+    # 次年度計画を作成
+    next_plan = BusinessPlan(
+        user_id=current_user.id,
+        name=f"{current_plan.fiscal_year + 1}年度事業計画",
+        fiscal_year=current_plan.fiscal_year + 1,
+        start_month=current_plan.start_month,
+        end_month=current_plan.end_month,
+        is_next_year=True
+    )
+    db.session.add(next_plan)
+    db.session.flush()  # IDを生成するためにflush
+
+    # 項目を保存
+    for item_data in data['items']:
+        item = BusinessPlanItem(
+            business_plan_id=next_plan.id,
+            name=item_data['name'],
+            category=item_data['category'],
+            item_type=item_data['item_type'],
+            sort_order=item_data['sort_order'],
+            total_amount=item_data['next_total']
+        )
+        
+        # 月次金額を計算（単純に12で割る）
+        monthly_amount = round(item_data['next_total'] / 12)
+        item.m1_amount = monthly_amount
+        item.m2_amount = monthly_amount
+        item.m3_amount = monthly_amount
+        item.m4_amount = monthly_amount
+        item.m5_amount = monthly_amount
+        item.m6_amount = monthly_amount
+        item.m7_amount = monthly_amount
+        item.m8_amount = monthly_amount
+        item.m9_amount = monthly_amount
+        item.m10_amount = monthly_amount
+        item.m11_amount = monthly_amount
+        item.m12_amount = monthly_amount
+
+        db.session.add(item)
+
+        # 子項目を保存
+        for child_data in item_data.get('children', []):
+            child = BusinessPlanItem(
+                business_plan_id=next_plan.id,
+                parent_id=item.id,
+                name=child_data['name'],
+                category=child_data['category'],
+                item_type=child_data['item_type'],
+                sort_order=child_data['sort_order'],
+                total_amount=child_data['next_total']
+            )
+            
+            # 月次金額を計算（単純に12で割る）
+            monthly_amount = round(child_data['next_total'] / 12)
+            child.m1_amount = monthly_amount
+            child.m2_amount = monthly_amount
+            child.m3_amount = monthly_amount
+            child.m4_amount = monthly_amount
+            child.m5_amount = monthly_amount
+            child.m6_amount = monthly_amount
+            child.m7_amount = monthly_amount
+            child.m8_amount = monthly_amount
+            child.m9_amount = monthly_amount
+            child.m10_amount = monthly_amount
+            child.m11_amount = monthly_amount
+            child.m12_amount = monthly_amount
+
+            db.session.add(child)
+
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': '次年度計画を保存しました。',
+            'plan_id': next_plan.id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': '保存中にエラーが発生しました。'
+        }), 500 

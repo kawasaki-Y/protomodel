@@ -360,6 +360,7 @@ class RevenueBusinessModel(db.Model):
     
     # リレーションシップ
     business_plan = relationship('BusinessPlan', backref='revenue_models')
+    tags = relationship('RevenueTag', secondary='revenue_model_tags', back_populates='revenue_models')
     
     def __repr__(self):
         return f'<RevenueBusinessModel {self.name}>'
@@ -435,9 +436,8 @@ class RevenueTag(db.Model):
     def __repr__(self):
         return f'<RevenueTag {self.name}>'
 
-# 収益事業とタグの中間テーブル
+# 収益事業モデルとタグの中間テーブル
 revenue_model_tags = db.Table('revenue_model_tags',
     db.Column('revenue_model_id', db.Integer, db.ForeignKey('revenue_business_models.id'), primary_key=True),
-    db.Column('tag_id', db.Integer, db.ForeignKey('revenue_tags.id'), primary_key=True),
-    db.Column('created_at', db.DateTime, default=datetime.utcnow)
+    db.Column('tag_id', db.Integer, db.ForeignKey('revenue_tags.id'), primary_key=True)
 ) 

@@ -3,6 +3,7 @@ from app.models.models import db, BusinessPlan, BusinessPlanItem, CashFlowPlan, 
 from flask_login import login_required, current_user
 from datetime import datetime
 import json
+import calendar
 
 cash_flow_bp = Blueprint('cash_flow', __name__, url_prefix='/cash-flow')
 
@@ -199,16 +200,16 @@ def sync_with_business_plan(cash_flow_id):
     cash_flow_plan = CashFlowPlan.query.get_or_404(cash_flow_id)
     
     # 事業計画から売上と費用の項目を取得
-    sales_items = PlanItem.query.filter_by(
+    sales_items = BusinessPlanItem.query.filter_by(
         business_plan_id=cash_flow_plan.business_plan_id, 
         category='売上'
     ).all()
     
-    expense_items = PlanItem.query.filter_by(
+    expense_items = BusinessPlanItem.query.filter_by(
         business_plan_id=cash_flow_plan.business_plan_id, 
         category='原価'
     ).all()
-    expense_items.extend(PlanItem.query.filter_by(
+    expense_items.extend(BusinessPlanItem.query.filter_by(
         business_plan_id=cash_flow_plan.business_plan_id, 
         category='販管費'
     ).all())
@@ -235,6 +236,39 @@ def sync_with_business_plan(cash_flow_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
+@cash_flow_bp.route('/api/cash-flow/calculate-from-plan', methods=['POST'])
+@login_required
+def calculate_from_plan():
+    data = request.get_json()
+    business_plan_id = data.get('business_plan_id')
+    
+    if not business_plan_id:
+        return jsonify({'error': '事業計画IDが必要です'}), 400
+    
+    try:
+        # 売上項目を取得
+        sales_items = BusinessPlanItem.query.filter_by(
+            business_plan_id=business_plan_id,
+            category='売上',
+            item_type='detail'
+        ).all()
+        
+        # 費用項目を取得（原価と販管費）
+        expense_items = BusinessPlanItem.query.filter_by(
+            business_plan_id=business_plan_id,
+            category='原価',
+            item_type='detail'
+        ).all()
+        expense_items.extend(BusinessPlanItem.query.filter_by(
+            business_plan_id=business_plan_id,
+            category='販管費',
+            item_type='detail'
+        ).all())
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 def create_default_cash_flow_items(cash_flow_plan_id, business_plan_id):
     """新規資金繰り計画の初期項目を作成する補助関数"""
@@ -270,7 +304,7 @@ def create_default_cash_flow_items(cash_flow_plan_id, business_plan_id):
     
     # 事業計画から関連項目を取得して子項目を作成
     # 売上項目
-    sales_items = PlanItem.query.filter_by(business_plan_id=business_plan_id, category='売上', item_type='detail').all()
+    sales_items = BusinessPlanItem.query.filter_by(business_plan_id=business_plan_id, category='売上', item_type='detail').all()
     for idx, sales_item in enumerate(sales_items):
         item = CashFlowItem(
             cash_flow_plan_id=cash_flow_plan_id,
@@ -284,8 +318,8 @@ def create_default_cash_flow_items(cash_flow_plan_id, business_plan_id):
         db.session.add(item)
     
     # 費用項目（原価・販管費）も同様に処理
-    expense_items = PlanItem.query.filter_by(business_plan_id=business_plan_id, category='原価', item_type='detail').all()
-    expense_items.extend(PlanItem.query.filter_by(business_plan_id=business_plan_id, category='販管費', item_type='detail').all())
+    expense_items = BusinessPlanItem.query.filter_by(business_plan_id=business_plan_id, category='原価', item_type='detail').all()
+    expense_items.extend(BusinessPlanItem.query.filter_by(business_plan_id=business_plan_id, category='販管費', item_type='detail').all())
     
     for idx, expense_item in enumerate(expense_items):
         item = CashFlowItem(
