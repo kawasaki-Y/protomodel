@@ -4,9 +4,15 @@ from app import db
 from app.models.user import User
 from functools import wraps
 
+# 認証関連の機能をまとめたBlueprint
 auth_bp = Blueprint('auth', __name__)
 
-# 管理者権限が必要なルート用のデコレータ
+# ==========================================================
+# 権限管理用のデコレータ
+# ==========================================================
+
+# 管理者権限チェック用のデコレータ
+# 管理者以外のアクセスを制限する時に使う
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -16,48 +22,100 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# 特定の権限が必要なルート用のデコレータ
-def permission_required(permission):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not current_user.is_authenticated or not current_user.has_permission(permission):
-                flash('この操作に必要な権限がありません', 'danger')
-                return abort(403)
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
+# ==========================================================
+# 基本的な認証機能
+# ==========================================================
 
+# トップページのルーティング
+# ログイン済みならnumerical_plan.indexへ、未ログインならログイン画面へ
 @auth_bp.route('/')
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('numerical_plan.index'))
     return redirect(url_for('auth.login'))
 
+# ログイン機能
+# POSTの場合はログイン処理、GETの場合はログイン画面表示
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    """
+    ログイン処理
+    
+    GET: ログインフォームの表示
+    POST: ユーザー認証と処理
+    """
+    # ログイン済みの場合はダッシュボードへリダイレクト
     if current_user.is_authenticated:
-        return redirect(url_for('numerical_plan.index'))
-        
+        return redirect(url_for('main.dashboard'))
+
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
-        
-        user = User.query.filter_by(username=username).first()
+        remember = request.form.get('remember', False)
+
+        # ユーザー認証
+        user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
-            login_user(user)
+            login_user(user, remember=remember)
+            # ログイン後のリダイレクト先を取得
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('numerical_plan.index'))
-            
-        flash('ユーザー名またはパスワードが正しくありません。')
+            return redirect(next_page or url_for('main.dashboard'))
+        
+        flash('メールアドレスまたはパスワードが正しくありません。', 'error')
     
     return render_template('auth/login.html')
+
+# ==========================================================
+# アカウント管理機能
+# ==========================================================
+
+# 新規アカウント作成（サインアップ）
+@auth_bp.route('/signup', methods=['GET', 'POST'])
+def signup():
+    """
+    新規ユーザー登録
+    
+    GET: 登録フォームの表示
+    POST: ユーザーの新規作成
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        try:
+            # ユーザー情報の取得
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            
+            # メールアドレスの重複チェック
+            if User.query.filter_by(email=email).first():
+                flash('このメールアドレスは既に登録されています。', 'error')
+                return render_template('auth/signup.html')
+            
+            # 新規ユーザーの作成
+            user = User(username=username, email=email)
+            user.set_password(password)
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            # 登録完了後の自動ログイン
+            login_user(user)
+            return redirect(url_for('main.dashboard'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('登録中にエラーが発生しました。', 'error')
+            
+    return render_template('auth/signup.html')
 
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    """ログアウト処理"""
     logout_user()
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('main.index'))
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -232,35 +290,4 @@ def delete_user(user_id):
     db.session.commit()
     
     flash(f'ユーザー {user.username} が削除されました', 'success')
-    return redirect(url_for('auth.manage_users'))
-
-@auth_bp.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if current_user.is_authenticated:
-        return redirect(url_for('numerical_plan.index'))
-        
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        # ユーザー名とメールアドレスの重複チェック
-        if User.query.filter_by(username=username).first():
-            flash('このユーザー名は既に使用されています。')
-            return redirect(url_for('auth.signup'))
-            
-        if User.query.filter_by(email=email).first():
-            flash('このメールアドレスは既に使用されています。')
-            return redirect(url_for('auth.signup'))
-        
-        # 新規ユーザーの作成
-        user = User(username=username, email=email)
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        
-        # 自動ログイン
-        login_user(user)
-        return redirect(url_for('numerical_plan.index'))
-    
-    return render_template('auth/signup.html') 
+    return redirect(url_for('auth.manage_users')) 

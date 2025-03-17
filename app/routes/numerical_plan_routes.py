@@ -112,15 +112,25 @@ def update_plan_items():
 @numerical_plan_bp.route('/revenue/wizard')
 @login_required
 def revenue_wizard():
-    """収益事業モデル診断ウィザード"""
+    """
+    収益事業モデル診断ウィザード
+    
+    ユーザーの回答に基づいて最適なビジネスモデルを提案する
+    """
     return render_template('numerical_plan/revenue/wizard.html')
 
 @numerical_plan_bp.route('/revenue/model/create', methods=['GET', 'POST'])
 @login_required
 def create_revenue_model():
-    """収益事業モデルの作成"""
+    """
+    収益事業モデルの作成
+    
+    GET: 作成フォームの表示
+    POST: 新規モデルの保存
+    """
     if request.method == 'POST':
         try:
+            # リクエストデータの取得と新規モデルの作成
             data = request.json
             new_model = RevenueBusiness(
                 user_id=current_user.id,
@@ -129,6 +139,8 @@ def create_revenue_model():
                 description=data.get('description', ''),
                 tags=data.get('tags', [])
             )
+            
+            # データベースへの保存
             db.session.add(new_model)
             db.session.commit()
             
@@ -137,19 +149,27 @@ def create_revenue_model():
                 'message': '収益事業モデルを作成しました',
                 'model': new_model.to_dict()
             })
+            
         except Exception as e:
+            # エラー発生時のロールバックとエラーメッセージの返却
             db.session.rollback()
             return jsonify({
                 'success': False,
                 'message': f'エラーが発生しました: {str(e)}'
             }), 400
 
+    # GET時はフォームを表示
     return render_template('numerical_plan/revenue/create.html')
 
 @numerical_plan_bp.route('/revenue/sales')
 @login_required
 def sales_entry():
-    """売上高入力画面"""
+    """
+    売上高入力画面
+    
+    ユーザーが保有する収益事業モデルの一覧を表示し、
+    売上データの入力を可能にする
+    """
     revenue_businesses = RevenueBusiness.query.filter_by(user_id=current_user.id).all()
     return render_template('numerical_plan/revenue/sales.html', revenue_businesses=revenue_businesses)
 
@@ -163,7 +183,13 @@ def get_revenue_businesses():
 @numerical_plan_bp.route('/api/sales-records/<int:business_id>')
 @login_required
 def get_sales_records(business_id):
-    """特定の収益事業の売上記録を取得するAPI"""
+    """
+    特定の収益事業の売上記録を取得するAPI
+    
+    Parameters:
+        business_id (int): 収益事業のID
+    """
+    # 事業の所有者確認
     business = RevenueBusiness.query.get_or_404(business_id)
     if business.user_id != current_user.id:
         return jsonify({'error': '権限がありません'}), 403
@@ -174,14 +200,20 @@ def get_sales_records(business_id):
 @numerical_plan_bp.route('/api/sales-records', methods=['POST'])
 @login_required
 def save_sales_record():
-    """売上記録を保存するAPI"""
+    """
+    売上記録を保存するAPI
+    
+    既存の記録がある場合は更新し、ない場合は新規作成する
+    """
     data = request.get_json()
     
+    # 事業の所有者確認
     business = RevenueBusiness.query.get_or_404(data['revenue_business_id'])
     if business.user_id != current_user.id:
         return jsonify({'error': '権限がありません'}), 403
     
     try:
+        # 既存の記録を検索または新規作成
         record = SalesRecord.query.filter_by(
             revenue_business_id=data['revenue_business_id'],
             month=datetime.strptime(data['month'], '%Y-%m').date()
@@ -190,6 +222,7 @@ def save_sales_record():
             month=datetime.strptime(data['month'], '%Y-%m').date()
         )
         
+        # データの更新
         for key, value in data.items():
             if hasattr(record, key) and key not in ['id', 'created_at', 'updated_at']:
                 setattr(record, key, value)

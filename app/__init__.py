@@ -1,37 +1,45 @@
 # アプリケーションパッケージの初期化
 # このファイルはappディレクトリをPythonパッケージとして認識させるために必要です 
 
-from flask import Flask, redirect, url_for
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 
-# dbオブジェクトをここで初期化
+# データベースとログイン管理の初期化
 db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
+    """
+    アプリケーションファクトリー
+    
+    Flaskアプリケーションを初期化し、必要な設定を行う
+    """
+    # Flaskアプリケーションの作成
     app = Flask(__name__)
     
-    # 設定の読み込み
-    app.config['SECRET_KEY'] = 'your-secret-key'  # 本番環境では環境変数から読み込むことを推奨
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # 基本設定
+    app.config['SECRET_KEY'] = 'your-secret-key'  # セッション管理用の秘密鍵
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'  # SQLiteデータベースの設定
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # パフォーマンス向上のため無効化
     
     # 拡張機能の初期化
-    db.init_app(app)
-    login_manager.init_app(app)
+    db.init_app(app)  # データベース
+    login_manager.init_app(app)  # ログイン管理
     
-    # ログイン設定
-    login_manager.login_view = 'auth.login'
+    # ログイン管理の設定
+    login_manager.login_view = 'auth.login'  # ログインページのエンドポイント
     login_manager.login_message = 'このページにアクセスするにはログインが必要です。'
     
+    # ユーザーローダーの設定
     @login_manager.user_loader
     def load_user(user_id):
+        """ログインユーザーの取得"""
         from app.models.user import User
         return User.query.get(int(user_id))
     
     with app.app_context():
-        # モデルのインポート（順序が重要）
+        # 必要なモデルのインポート
         from app.models.user import User
         from app.models.revenue_business import RevenueBusiness
         from app.models.sales_record import SalesRecord
@@ -43,15 +51,12 @@ def create_app():
         app.register_blueprint(auth_bp)
         app.register_blueprint(numerical_plan_bp)
         
-        # データベースの作成
+        # データベースの初期化
         db.create_all()
         
-        # テストユーザーの作成（開発時のみ）
+        # 開発用のテストユーザー作成
         if not User.query.filter_by(username='test').first():
-            test_user = User(
-                username='test',
-                email='test@example.com'
-            )
+            test_user = User(username='test', email='test@example.com')
             test_user.set_password('test123')
             db.session.add(test_user)
             db.session.commit()
