@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}収益事業モデル診断{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- ウィザードのコンテナ -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- ステップインジケーター -->
+            <div class="bg-gray-100 px-6 py-4 border-b">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">診断</p>
+                            <p class="text-xs text-gray-500">ビジネスモデルの診断</p>
+                        </div>
+                    </div>
+                    <div class="flex-1 mx-4">
+                        <div class="h-1 bg-gray-200">
+                            <div class="w-0 h-full bg-blue-600 transition-all duration-500" id="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">2</div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-500">設定</p>
+                            <p class="text-xs text-gray-500">モデルの詳細設定</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- コンテンツエリア -->
+            <div class="p-6">
+                <!-- スタート画面 -->
+                <div id="start-screen" class="text-center py-8">
+                    <h1 class="text-3xl font-bold mb-4">収益事業モデル診断</h1>
+                    <p class="text-gray-600 mb-8">
+                        いくつかの質問に答えていただくことで、<br>
+                        最適な収益事業モデルをご提案します。
+                    </p>
+                    <button id="start-button" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        診断を開始する
+                    </button>
+                </div>
+
+                <!-- 質問画面 -->
+                <div id="questions-screen" class="hidden">
+                    <h2 class="text-2xl font-bold mb-6" id="question-title"></h2>
+                    <div class="space-y-4">
+                        <button class="w-full text-left p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-answer="yes">
+                            はい
+                        </button>
+                        <button class="w-full text-left p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-answer="no">
+                            いいえ
+                        </button>
+                        <button class="w-full text-left p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-answer="unsure">
+                            わからない
+                        </button>
+                    </div>
+                    <div class="mt-8 flex justify-between">
+                        <button id="prev-question" class="text-gray-600 px-4 py-2 rounded hover:bg-gray-100">
+                            前の質問
+                        </button>
+                        <div class="text-sm text-gray-500" id="question-progress"></div>
+                        <button id="next-question" class="text-gray-600 px-4 py-2 rounded hover:bg-gray-100">
+                            次の質問
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 結果画面 -->
+                <div id="results-screen" class="hidden">
+                    <h2 class="text-2xl font-bold mb-6">診断結果</h2>
+                    <div id="recommendations" class="space-y-4"></div>
+                    <div class="mt-8 flex justify-center">
+                        <button id="restart-button" class="mr-4 px-6 py-2 border rounded text-gray-600 hover:bg-gray-50">
+                            もう一度診断
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentQuestion = 0;
+    let questions = [];
+    let answers = {};
+    
+    const startScreen = document.getElementById('start-screen');
+    const questionsScreen = document.getElementById('questions-screen');
+    const resultsScreen = document.getElementById('results-screen');
+    const progressBar = document.getElementById('progress-bar');
+    const questionTitle = document.getElementById('question-title');
+    const questionProgress = document.getElementById('question-progress');
+    
+    // 診断開始
+    document.getElementById('start-button').addEventListener('click', async () => {
+        const response = await fetch('/revenue-wizard/questions');
+        const data = await response.json();
+        questions = data.questions;
+        
+        startScreen.classList.add('hidden');
+        questionsScreen.classList.remove('hidden');
+        showQuestion(0);
+    });
+    
+    // 質問表示
+    function showQuestion(index) {
+        if (index < 0 || index >= questions.length) return;
+        
+        currentQuestion = index;
+        questionTitle.textContent = questions[index];
+        questionProgress.textContent = `${index + 1} / ${questions.length}`;
+        
+        // プログレスバーの更新
+        const progress = ((index + 1) / questions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        // ボタンの状態更新
+        document.getElementById('prev-question').disabled = index === 0;
+        document.getElementById('next-question').disabled = index === questions.length - 1;
+    }
+    
+    // 回答の記録
+    document.querySelectorAll('[data-answer]').forEach(button => {
+        button.addEventListener('click', () => {
+            answers[questions[currentQuestion]] = button.dataset.answer === 'yes';
+            
+            if (currentQuestion < questions.length - 1) {
+                showQuestion(currentQuestion + 1);
+            } else {
+                showResults();
+            }
+        });
+    });
+    
+    // 前の質問へ
+    document.getElementById('prev-question').addEventListener('click', () => {
+        showQuestion(currentQuestion - 1);
+    });
+    
+    // 次の質問へ
+    document.getElementById('next-question').addEventListener('click', () => {
+        showQuestion(currentQuestion + 1);
+    });
+    
+    // 結果表示
+    async function showResults() {
+        const response = await fetch('/revenue-wizard/recommend', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ answers })
+        });
+        
+        const data = await response.json();
+        const recommendationsDiv = document.getElementById('recommendations');
+        recommendationsDiv.innerHTML = '';
+        
+        data.recommendations.forEach(model => {
+            const modelDiv = document.createElement('div');
+            modelDiv.className = 'p-6 bg-white rounded-lg border';
+            modelDiv.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">${model.name}</h3>
+                        <p class="text-gray-600 mb-4">${model.description}</p>
+                    </div>
+                    <div class="ml-4">
+                        <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                            適合度: ${Math.round((model.score / 3) * 100)}%
+                        </span>
+                    </div>
+                </div>
+                <a href="/revenue-wizard/setup/${model.id}" class="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    このモデルを選択
+                </a>
+            `;
+            recommendationsDiv.appendChild(modelDiv);
+        });
+        
+        questionsScreen.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+    }
+    
+    // 診断のやり直し
+    document.getElementById('restart-button').addEventListener('click', () => {
+        currentQuestion = 0;
+        answers = {};
+        resultsScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+        progressBar.style.width = '0%';
+    });
+});
+</script>
+{% endblock %} 

@@ -325,4 +325,119 @@ class AccountItem(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f'<AccountItem {self.code}: {self.name}>' 
+        return f'<AccountItem {self.code}: {self.name}>'
+
+
+class RevenueBusinessModel(db.Model):
+    """収益事業モデル"""
+    __tablename__ = 'revenue_business_models'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    business_plan_id = db.Column(db.Integer, db.ForeignKey('business_plans.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # 事業名
+    business_type = db.Column(db.String(50), nullable=False)  # 事業タイプ（単価×数量、サブスクリプション等）
+    description = db.Column(db.Text, nullable=True)  # 事業の説明
+    
+    # 月別売上高
+    m1_amount = db.Column(db.Integer, default=0)
+    m2_amount = db.Column(db.Integer, default=0)
+    m3_amount = db.Column(db.Integer, default=0)
+    m4_amount = db.Column(db.Integer, default=0)
+    m5_amount = db.Column(db.Integer, default=0)
+    m6_amount = db.Column(db.Integer, default=0)
+    m7_amount = db.Column(db.Integer, default=0)
+    m8_amount = db.Column(db.Integer, default=0)
+    m9_amount = db.Column(db.Integer, default=0)
+    m10_amount = db.Column(db.Integer, default=0)
+    m11_amount = db.Column(db.Integer, default=0)
+    m12_amount = db.Column(db.Integer, default=0)
+    
+    # 事業固有のパラメータ（JSON形式で保存）
+    parameters = db.Column(db.JSON, nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # リレーションシップ
+    business_plan = relationship('BusinessPlan', backref='revenue_models')
+    
+    def __repr__(self):
+        return f'<RevenueBusinessModel {self.name}>'
+    
+    @property
+    def total_amount(self):
+        """年間合計売上高を返す"""
+        return sum([
+            self.m1_amount, self.m2_amount, self.m3_amount, 
+            self.m4_amount, self.m5_amount, self.m6_amount,
+            self.m7_amount, self.m8_amount, self.m9_amount,
+            self.m10_amount, self.m11_amount, self.m12_amount
+        ])
+    
+    def get_month_amount(self, month_index):
+        """指定された月の売上高を返す"""
+        month_amounts = {
+            1: self.m1_amount, 2: self.m2_amount, 3: self.m3_amount,
+            4: self.m4_amount, 5: self.m5_amount, 6: self.m6_amount,
+            7: self.m7_amount, 8: self.m8_amount, 9: self.m9_amount,
+            10: self.m10_amount, 11: self.m11_amount, 12: self.m12_amount
+        }
+        return month_amounts.get(month_index, 0)
+    
+    def calculate_monthly_revenue(self):
+        """事業タイプに基づいて月別売上高を計算"""
+        if not self.parameters:
+            return
+            
+        if self.business_type == 'unit_sales':
+            # 単価×数量の場合
+            unit_price = self.parameters.get('unit_price', 0)
+            monthly_units = self.parameters.get('monthly_units', {})
+            
+            for month in range(1, 13):
+                units = monthly_units.get(str(month), 0)
+                amount = unit_price * units
+                self.set_month_amount(month, amount)
+                
+        elif self.business_type == 'subscription':
+            # サブスクリプションの場合
+            monthly_fee = self.parameters.get('monthly_fee', 0)
+            subscribers = self.parameters.get('subscribers', {})
+            
+            for month in range(1, 13):
+                sub_count = subscribers.get(str(month), 0)
+                amount = monthly_fee * sub_count
+                self.set_month_amount(month, amount)
+    
+    def set_month_amount(self, month_index, value):
+        """指定された月の売上高を設定"""
+        month_map = {
+            1: 'm1_amount', 2: 'm2_amount', 3: 'm3_amount',
+            4: 'm4_amount', 5: 'm5_amount', 6: 'm6_amount',
+            7: 'm7_amount', 8: 'm8_amount', 9: 'm9_amount',
+            10: 'm10_amount', 11: 'm11_amount', 12: 'm12_amount'
+        }
+        if month_index in month_map:
+            setattr(self, month_map[month_index], value)
+
+class RevenueTag(db.Model):
+    """収益事業のタグモデル"""
+    __tablename__ = 'revenue_tags'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
+    color = db.Column(db.String(7), nullable=False, default='#3490dc')  # タグの表示色
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # リレーションシップ
+    revenue_models = relationship('RevenueBusinessModel', secondary='revenue_model_tags', back_populates='tags')
+    
+    def __repr__(self):
+        return f'<RevenueTag {self.name}>'
+
+# 収益事業とタグの中間テーブル
+revenue_model_tags = db.Table('revenue_model_tags',
+    db.Column('revenue_model_id', db.Integer, db.ForeignKey('revenue_business_models.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('revenue_tags.id'), primary_key=True),
+    db.Column('created_at', db.DateTime, default=datetime.utcnow)
+) 
