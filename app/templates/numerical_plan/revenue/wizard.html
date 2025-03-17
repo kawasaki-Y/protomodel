@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block page_title %}収益事業モデル診断{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-3xl mx-auto">
+        <!-- プログレスバー -->
+        <div class="mb-8">
+            <div class="relative pt-1">
+                <div class="flex mb-2 items-center justify-between">
+                    <div>
+                        <span id="progress-text" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                            ステップ 1/5
+                        </span>
+                    </div>
+                </div>
+                <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
+                    <div id="progress-bar" style="width:20%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 質問エリア -->
+        <div id="question-area" class="bg-white shadow-lg rounded-lg p-6">
+            <!-- 質問1 -->
+            <div id="q1" class="question-step">
+                <h3 class="text-xl font-semibold mb-4">Q1: 売上は「単価×数量」で表せますか？</h3>
+                <p class="text-gray-600 mb-6">商品やサービスの価格が決まっており、販売数に応じて売上が変動する場合は「はい」を選択してください。</p>
+                <div class="flex space-x-4">
+                    <button class="answer-btn px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-next="q2" data-answer="yes">はい</button>
+                    <button class="answer-btn px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-next="q3" data-answer="no">いいえ</button>
+                </div>
+            </div>
+
+            <!-- 質問2 -->
+            <div id="q2" class="question-step hidden">
+                <h3 class="text-xl font-semibold mb-4">Q2: 利用量に応じて課金しますか？</h3>
+                <p class="text-gray-600 mb-6">APIコール数や使用時間など、利用量に応じて料金が変動する場合は「はい」を選択してください。</p>
+                <div class="flex space-x-4">
+                    <button class="answer-btn px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-result="usage_based">はい</button>
+                    <button class="answer-btn px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-result="unit_price_qty">いいえ</button>
+                </div>
+            </div>
+
+            <!-- 以降の質問も同様に実装 -->
+            
+            <!-- 結果表示エリア -->
+            <div id="result" class="hidden">
+                <h3 class="text-xl font-semibold mb-4">診断結果</h3>
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                    <p class="text-lg mb-2">あなたにオススメのビジネスモデル：</p>
+                    <p id="recommended-model" class="text-2xl font-bold text-blue-600"></p>
+                </div>
+                <div class="flex justify-end">
+                    <a href="/numerical-plan/revenue/model/create" class="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        収益事業を登録する
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questionArea = document.getElementById('question-area');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
+    // モデルタイプの日本語表示用マッピング
+    const modelTypeNames = {
+        'unit_price_qty': '単価×販売数モデル',
+        'usage_based': '従量課金モデル',
+        'fixed_amount': '固定金額モデル',
+        'subscription': 'サブスクリプションモデル',
+        'advertising': '広告収入モデル',
+        'project_based': 'プロジェクトベースモデル',
+        'hybrid': '複合モデル',
+        'other': 'その他'
+    };
+    
+    // 回答ボタンのイベントリスナー
+    questionArea.addEventListener('click', function(e) {
+        if (e.target.classList.contains('answer-btn')) {
+            const nextStep = e.target.dataset.next;
+            const result = e.target.dataset.result;
+            
+            if (result) {
+                // 結果を表示
+                showResult(result);
+            } else if (nextStep) {
+                // 次の質問に進む
+                showQuestion(nextStep);
+            }
+        }
+    });
+    
+    // 質問を表示する関数
+    function showQuestion(questionId) {
+        // 現在の質問を非表示
+        document.querySelectorAll('.question-step').forEach(el => el.classList.add('hidden'));
+        
+        // 次の質問を表示
+        const nextQuestion = document.getElementById(questionId);
+        nextQuestion.classList.remove('hidden');
+        
+        // プログレスバーを更新
+        updateProgress(questionId);
+    }
+    
+    // 結果を表示する関数
+    function showResult(modelType) {
+        // すべての質問を非表示
+        document.querySelectorAll('.question-step').forEach(el => el.classList.add('hidden'));
+        
+        // 結果エリアを表示
+        const resultArea = document.getElementById('result');
+        resultArea.classList.remove('hidden');
+        
+        // オススメモデルを表示
+        document.getElementById('recommended-model').textContent = modelTypeNames[modelType];
+        
+        // プログレスバーを100%に
+        progressBar.style.width = '100%';
+        progressText.textContent = '診断完了';
+    }
+    
+    // プログレスバーを更新する関数
+    function updateProgress(questionId) {
+        const totalSteps = 5;
+        const currentStep = parseInt(questionId.replace('q', ''));
+        const progress = (currentStep / totalSteps) * 100;
+        
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `ステップ ${currentStep}/${totalSteps}`;
+    }
+});
+</script>
+{% endblock %} 

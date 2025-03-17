@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from app.models.models import db, User
+from app import db
+from app.models.user import User
 from functools import wraps
 
 auth_bp = Blueprint('auth', __name__)
@@ -27,37 +28,35 @@ def permission_required(permission):
         return decorated_function
     return decorator
 
+@auth_bp.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('numerical_plan.index'))
+    return redirect(url_for('auth.login'))
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """ログイン画面と処理"""
-    # すでにログインしている場合はダッシュボードにリダイレクト
     if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
-    
-    # POST処理（ログイン処理）
+        return redirect(url_for('numerical_plan.index'))
+        
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        remember = 'remember' in request.form
         
-        # ユーザー認証
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user, remember=remember)
+            login_user(user)
             next_page = request.args.get('next')
-            flash('ログインに成功しました', 'success')
-            return redirect(next_page or url_for('main.dashboard'))
-        else:
-            flash('ユーザー名またはパスワードが正しくありません', 'danger')
+            return redirect(next_page or url_for('numerical_plan.index'))
+            
+        flash('ユーザー名またはパスワードが正しくありません。')
     
     return render_template('auth/login.html')
 
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    """ログアウト処理"""
     logout_user()
-    flash('ログアウトしました', 'info')
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -233,4 +232,35 @@ def delete_user(user_id):
     db.session.commit()
     
     flash(f'ユーザー {user.username} が削除されました', 'success')
-    return redirect(url_for('auth.manage_users')) 
+    return redirect(url_for('auth.manage_users'))
+
+@auth_bp.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if current_user.is_authenticated:
+        return redirect(url_for('numerical_plan.index'))
+        
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # ユーザー名とメールアドレスの重複チェック
+        if User.query.filter_by(username=username).first():
+            flash('このユーザー名は既に使用されています。')
+            return redirect(url_for('auth.signup'))
+            
+        if User.query.filter_by(email=email).first():
+            flash('このメールアドレスは既に使用されています。')
+            return redirect(url_for('auth.signup'))
+        
+        # 新規ユーザーの作成
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        # 自動ログイン
+        login_user(user)
+        return redirect(url_for('numerical_plan.index'))
+    
+    return render_template('auth/signup.html') 

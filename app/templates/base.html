@@ -95,281 +95,72 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-100">
-    <div class="flex">
+    <div class="min-h-screen flex">
         <!-- サイドバー -->
-        <aside class="sidebar bg-gray-800 text-white">
-            <div class="p-4 border-b border-gray-700">
+        <div class="bg-gray-800 text-white w-64 flex-shrink-0">
+            <div class="p-4">
                 <h1 class="text-xl font-bold">事業計画システム</h1>
             </div>
             <nav class="mt-4">
                 <ul>
+                    <!-- ダッシュボードへのリンクを修正 -->
                     <li class="mb-1">
-                        <a href="{{ url_for('main.dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/dashboard' %}bg-blue-600{% endif %}">
-                            <i class="fas fa-tachometer-alt mr-3"></i>
-                            <span>ダッシュボード</span>
+                        <a href="{{ url_for('numerical_plan.index') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/' %}bg-blue-600{% endif %}">
+                            <i class="fas fa-home mr-3"></i>
+                            <span>ホーム</span>
                         </a>
                     </li>
                     
-                    <!-- 単年事業計画のドロップダウンメニュー -->
                     <li class="mb-1">
-                        <button type="button" class="flex items-center w-full px-4 py-2 hover:bg-gray-700 rounded text-left" id="business-plan-dropdown-btn">
-                            <i class="fas fa-file-invoice-dollar mr-3"></i>
-                            <span>単年事業計画</span>
-                            <i class="fas fa-chevron-down ml-auto"></i>
-                        </button>
-                        <ul class="pl-4 mt-1 hidden" id="business-plan-dropdown">
-                            <li class="mb-1">
-                                <a href="{{ url_for('business_plan.current') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if '/business-plan/current' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-file-alt mr-3"></i>
-                                    <span>事業計画</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    
-                    <!-- 数値計画のドロップダウンメニュー -->
-                    <li class="mb-1 sidebar-dropdown">
-                        <a href="{{ url_for('numerical_plan.index') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/numerical-plan') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-calculator mr-3"></i>
-                            <span>数値計画</span>
-                            <i class="fas fa-chevron-down ml-auto text-xs"></i>
+                        <a href="{{ url_for('numerical_plan.revenue_wizard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/numerical-plan/revenue/wizard') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-magic mr-3"></i>
+                            <span>収益モデル診断</span>
                         </a>
-                        <div class="sidebar-dropdown-menu">
-                            <div class="py-2">
-                                <span class="px-4 text-sm text-gray-400">収益計画</span>
-                                <a href="{{ url_for('numerical_plan.revenue_plan', category='sales') }}" class="rounded-sm {% if '/numerical-plan/revenue/sales' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-chart-line mr-2"></i>売上高
-                                </a>
-                                <a href="{{ url_for('numerical_plan.revenue_plan', category='non_operating') }}" class="rounded-sm {% if '/numerical-plan/revenue/non_operating' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-money-bill-alt mr-2"></i>営業外収益
-                                </a>
-                                <a href="{{ url_for('numerical_plan.revenue_plan', category='special') }}" class="rounded-sm {% if '/numerical-plan/revenue/special' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-star mr-2"></i>特別利益
-                                </a>
-                            </div>
-                            <div class="py-2">
-                                <span class="px-4 text-sm text-gray-400">費用計画</span>
-                                <a href="{{ url_for('numerical_plan.expense_plan', category='cost') }}" class="rounded-sm {% if '/numerical-plan/expense/cost' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-box mr-2"></i>売上原価
-                                </a>
-                                <a href="{{ url_for('numerical_plan.expense_plan', category='sga') }}" class="rounded-sm {% if '/numerical-plan/expense/sga' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-building mr-2"></i>販管費
-                                </a>
-                                <a href="{{ url_for('numerical_plan.expense_plan', category='non_operating') }}" class="rounded-sm {% if '/numerical-plan/expense/non_operating' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-money-bill-wave mr-2"></i>営業外費用
-                                </a>
-                                <a href="{{ url_for('numerical_plan.expense_plan', category='special') }}" class="rounded-sm {% if '/numerical-plan/expense/special' in request.path %}bg-blue-600{% endif %}">
-                                    <i class="fas fa-exclamation-triangle mr-2"></i>特別損失
-                                </a>
-                            </div>
-                        </div>
                     </li>
                     
                     <li class="mb-1">
-                        <a href="{{ url_for('business_plan.next') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/business-plan/next') %}bg-blue-600{% endif %}">
+                        <a href="{{ url_for('numerical_plan.create_revenue_model') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/numerical-plan/revenue/model/create') %}bg-blue-600{% endif %}">
+                            <i class="fas fa-plus-circle mr-3"></i>
+                            <span>収益モデル作成</span>
+                        </a>
+                    </li>
+                    
+                    <li class="mb-1">
+                        <a href="{{ url_for('numerical_plan.sales_entry') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/numerical-plan/revenue/sales') %}bg-blue-600{% endif %}">
                             <i class="fas fa-chart-line mr-3"></i>
-                            <span>次年度計画</span>
+                            <span>売上高入力</span>
                         </a>
-                    </li>
-                    
-                    <li class="mb-1">
-                        <a href="{{ url_for('cash_flow.index') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/cash-flow') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-money-bill-wave mr-3"></i>
-                            <span>資金繰り計画</span>
-                        </a>
-                    </li>
-                    
-                    <li class="mb-1">
-                        <a href="{{ url_for('analytics.analytics_dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/analytics') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-chart-bar mr-3"></i>
-                            <span>分析ダッシュボード</span>
-                        </a>
-                    </li>
-                    
-                    <li class="mb-1">
-                        <a href="{{ url_for('main.dashboard') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/reports') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-file-alt mr-3"></i>
-                            <span>レポート</span>
-                        </a>
-                    </li>
-                    
-                    <li class="mb-1 sidebar-dropdown">
-                        <a href="#" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/account-settings') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-list-alt mr-3"></i>
-                            <span>勘定科目設定</span>
-                            <i class="fas fa-chevron-down ml-auto text-xs"></i>
-                        </a>
-                        <div class="sidebar-dropdown-menu">
-                            <a href="{{ url_for('account_settings.pl_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/pl') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-chart-pie mr-2"></i>損益計算書科目
-                            </a>
-                            <a href="{{ url_for('account_settings.bs_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/bs') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-balance-scale-right mr-2"></i>貸借対照表科目
-                            </a>
-                            <a href="{{ url_for('account_settings.cf_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/cf') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-money-check-alt mr-2"></i>資金繰り用科目
-                            </a>
-                            <a href="{{ url_for('account_settings.capital_accounts') }}" class="rounded-sm {% if request.path.startswith('/account-settings/capital') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-coins mr-2"></i>資本政策科目
-                            </a>
-                        </div>
-                    </li>
-                    
-                    <li class="mb-1 sidebar-dropdown">
-                        <a href="#" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path.startswith('/settings') %}bg-blue-600{% endif %}">
-                            <i class="fas fa-cog mr-3"></i>
-                            <span>各種設定</span>
-                            <i class="fas fa-chevron-down ml-auto text-xs"></i>
-                        </a>
-                        <div class="sidebar-dropdown-menu">
-                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/business') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-building mr-2"></i>事業者
-                            </a>
-                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/opening-balance') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-balance-scale mr-2"></i>開始残高
-                            </a>
-                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/tax') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-percentage mr-2"></i>税区分
-                            </a>
-                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/department') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-sitemap mr-2"></i>部門
-                            </a>
-                            <a href="{{ url_for('main.dashboard') }}" class="rounded-sm {% if request.path.startswith('/settings/tags') %}bg-blue-600{% endif %}">
-                                <i class="fas fa-tags mr-2"></i>タグ
-                            </a>
-                        </div>
                     </li>
                     
                     {% if current_user.is_authenticated %}
-                    <li class="mb-1 mt-6 border-t border-gray-700 pt-4">
-                        <a href="{{ url_for('auth.profile') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/profile' %}bg-blue-600{% endif %}">
-                            <i class="fas fa-user mr-3"></i>
-                            <span>マイプロフィール</span>
-                        </a>
-                    </li>
                     <li class="mb-1">
                         <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded">
                             <i class="fas fa-sign-out-alt mr-3"></i>
                             <span>ログアウト</span>
                         </a>
                     </li>
-                    {% else %}
-                    <li class="mb-1 mt-6 border-t border-gray-700 pt-4">
-                        <a href="{{ url_for('auth.login') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/login' %}bg-blue-600{% endif %}">
-                            <i class="fas fa-sign-in-alt mr-3"></i>
-                            <span>ログイン</span>
-                        </a>
-                    </li>
-                    <li class="mb-1">
-                        <a href="{{ url_for('auth.register') }}" class="flex items-center px-4 py-2 hover:bg-gray-700 rounded {% if request.path == '/register' %}bg-blue-600{% endif %}">
-                            <i class="fas fa-user-plus mr-3"></i>
-                            <span>新規登録</span>
-                        </a>
-                    </li>
                     {% endif %}
                 </ul>
             </nav>
-        </aside>
+        </div>
 
         <!-- メインコンテンツ -->
-        <main class="main-content w-full">
-            <div class="container mx-auto">
-                {% if current_user.is_authenticated %}
-                <div class="flex justify-end mb-4">
-                    <div class="dropdown">
-                        <button class="flex items-center px-3 py-2 bg-white rounded-lg shadow hover:bg-gray-50" id="userDropdown">
-                            <span class="mr-2">{{ current_user.username }}</span>
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </button>
-                        <div class="dropdown-menu mt-1 bg-white shadow-lg rounded-lg py-2">
-                            <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user mr-2"></i> プロフィール
-                            </a>
-                            <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-sign-out-alt mr-2"></i> ログアウト
-                            </a>
-                        </div>
-                    </div>
+        <div class="flex-1">
+            <header class="bg-white shadow">
+                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        {% block page_title %}{% endblock %}
+                    </h2>
                 </div>
-                {% endif %}
-                
-                <div class="bg-white shadow-md rounded-lg p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">{% block page_title %}ページタイトル{% endblock %}</h2>
-                        <div>
-                            {% block page_actions %}{% endblock %}
-                        </div>
-                    </div>
-                    
-                    {% block content %}{% endblock %}
-                </div>
-            </div>
-        </main>
+            </header>
+
+            <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
     </div>
 
-    <!-- モバイル用メニュートグル -->
-    <button id="sidebarToggle" class="fixed bottom-4 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg md:hidden">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- JavaScript -->
-    <script>
-        // サイドバートグル
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            
-            sidebar.classList.toggle('open');
-            mainContent.classList.toggle('sidebar-open');
-        });
-        
-        // ユーザードロップダウンメニュー
-        const userDropdown = document.getElementById('userDropdown');
-        if (userDropdown) {
-            userDropdown.addEventListener('click', function() {
-                const dropdown = this.closest('.dropdown');
-                dropdown.classList.toggle('open');
-            });
-            
-            // 画面クリックでドロップダウンを閉じる
-            document.addEventListener('click', function(event) {
-                if (!event.target.closest('#userDropdown')) {
-                    const dropdown = document.querySelector('.dropdown');
-                    if (dropdown && dropdown.classList.contains('open')) {
-                        dropdown.classList.remove('open');
-                    }
-                }
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // 既存のスクリプトはそのまま保持
-
-            // 単年事業計画ドロップダウン
-            const businessPlanDropdownBtn = document.getElementById('business-plan-dropdown-btn');
-            const businessPlanDropdown = document.getElementById('business-plan-dropdown');
-            
-            businessPlanDropdownBtn.addEventListener('click', function() {
-                businessPlanDropdown.classList.toggle('hidden');
-                
-                // アイコンの回転
-                const icon = this.querySelector('.fa-chevron-down');
-                if (businessPlanDropdown.classList.contains('hidden')) {
-                    icon.style.transform = 'rotate(0deg)';
-                } else {
-                    icon.style.transform = 'rotate(180deg)';
-                }
-            });
-            
-            // 現在のページがドロップダウン内のリンクの場合、ドロップダウンを開く
-            if (window.location.pathname.startsWith('/business-plan/current') || 
-                window.location.pathname.startsWith('/business-plan/items')) {
-                businessPlanDropdown.classList.remove('hidden');
-                businessPlanDropdownBtn.querySelector('.fa-chevron-down').style.transform = 'rotate(180deg)';
-            }
-        });
-    </script>
-    
-    {% block scripts %}{% endblock %}
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
 </body>
 </html>

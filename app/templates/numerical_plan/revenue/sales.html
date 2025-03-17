@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block page_title %}売上高入力{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">売上高入力</h1>
+        <p class="text-gray-600">収益事業ごとの売上高を入力してください。</p>
+    </div>
+
+    <!-- 収益事業選択 -->
+    <div class="mb-8">
+        <label for="business-select" class="block text-sm font-medium text-gray-700 mb-2">収益事業を選択</label>
+        <select id="business-select" class="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <option value="">選択してください</option>
+            {% for business in revenue_businesses %}
+            <option value="{{ business.id }}" data-model-type="{{ business.model_type }}">{{ business.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 入力フォーム -->
+    <div id="sales-form" class="hidden">
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+            <!-- 期間選択 -->
+            <div class="mb-6">
+                <label for="month-select" class="block text-sm font-medium text-gray-700 mb-2">対象月</label>
+                <input type="month" id="month-select" 
+                       class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- モデル別入力フォーム -->
+            <div id="model-specific-inputs" class="space-y-6">
+                <!-- JavaScriptで動的に生成 -->
+            </div>
+
+            <!-- 合計金額 -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-medium text-gray-700">合計売上高</span>
+                    <span id="total-amount" class="text-xl font-bold text-blue-600">¥0</span>
+                </div>
+            </div>
+
+            <!-- 保存ボタン -->
+            <div class="mt-6 flex justify-end">
+                <button id="save-button" type="button"
+                        class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    保存
+                </button>
+            </div>
+        </div>
+
+        <!-- 月別売上表 -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-800 mb-4">月別売上実績</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">月</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">売上高</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">詳細</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sales-table-body">
+                        <!-- JavaScriptで動的に生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const businessSelect = document.getElementById('business-select');
+    const salesForm = document.getElementById('sales-form');
+    const modelSpecificInputs = document.getElementById('model-specific-inputs');
+    const monthSelect = document.getElementById('month-select');
+    const totalAmount = document.getElementById('total-amount');
+    const saveButton = document.getElementById('save-button');
+    const salesTableBody = document.getElementById('sales-table-body');
+    
+    let currentBusinessId = null;
+    let currentModelType = null;
+    
+    // 入力フォームの定義
+    const modelForms = {
+        unit_price_qty: {
+            title: '単価×販売数モデル',
+            fields: [
+                { id: 'unit_price', label: '単価', type: 'number', placeholder: '1個あたりの価格' },
+                { id: 'quantity', label: '販売数', type: 'number', placeholder: '販売個数' }
+            ],
+            calculate: (data) => (data.unit_price || 0) * (data.quantity || 0)
+        },
+        usage_based: {
+            title: '従量課金モデル',
+            fields: [
+                { id: 'usage_amount', label: '利用量', type: 'number', placeholder: '利用量を入力' },
+                { id: 'usage_unit_price', label: '単価', type: 'number', placeholder: '1単位あたりの価格' }
+            ],
+            calculate: (data) => (data.usage_amount || 0) * (data.usage_unit_price || 0)
+        },
+        fixed_amount: {
+            title: '固定金額モデル',
+            fields: [
+                { id: 'total_amount', label: '固定金額', type: 'number', placeholder: '月額固定金額' }
+            ],
+            calculate: (data) => data.total_amount || 0
+        },
+        subscription: {
+            title: 'サブスクリプションモデル',
+            fields: [
+                { id: 'subscriber_count', label: '契約者数', type: 'number', placeholder: '契約者数を入力' },
+                { id: 'monthly_fee', label: '月額料金', type: 'number', placeholder: '1契約あたりの月額料金' }
+            ],
+            calculate: (data) => (data.subscriber_count || 0) * (data.monthly_fee || 0)
+        },
+        advertising: {
+            title: '広告収入モデル',
+            fields: [
+                { id: 'ad_impression', label: '広告表示回数', type: 'number', placeholder: '表示回数を入力' },
+                { id: 'ad_unit_price', label: '広告単価', type: 'number', placeholder: '1表示あたりの単価' }
+            ],
+            calculate: (data) => (data.ad_impression || 0) * (data.ad_unit_price || 0)
+        },
+        project_based: {
+            title: 'プロジェクトベースモデル',
+            fields: [
+                { id: 'project_count', label: 'プロジェクト数', type: 'number', placeholder: 'プロジェクト数を入力' },
+                { id: 'project_unit_price', label: 'プロジェクト単価', type: 'number', placeholder: '1プロジェクトあたりの単価' }
+            ],
+            calculate: (data) => (data.project_count || 0) * (data.project_unit_price || 0)
+        }
+    };
+    
+    // 収益事業選択時の処理
+    businessSelect.addEventListener('change', function() {
+        currentBusinessId = this.value;
+        currentModelType = this.selectedOptions[0].dataset.modelType;
+        
+        if (currentBusinessId) {
+            salesForm.classList.remove('hidden');
+            renderModelForm();
+            loadSalesRecords();
+        } else {
+            salesForm.classList.add('hidden');
+        }
+    });
+    
+    // モデル別入力フォームの描画
+    function renderModelForm() {
+        const formConfig = modelForms[currentModelType];
+        if (!formConfig) {
+            modelSpecificInputs.innerHTML = '<p class="text-gray-600">このビジネスモデルの入力フォームは準備中です。</p>';
+            return;
+        }
+        
+        let html = `<h3 class="text-lg font-medium text-gray-800 mb-4">${formConfig.title}</h3>`;
+        html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+        
+        formConfig.fields.forEach(field => {
+            html += `
+                <div>
+                    <label for="${field.id}" class="block text-sm font-medium text-gray-700 mb-1">
+                        ${field.label}
+                    </label>
+                    <input type="${field.type}" id="${field.id}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="${field.placeholder}">
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        modelSpecificInputs.innerHTML = html;
+        
+        // 入力値変更時の処理
+        formConfig.fields.forEach(field => {
+            document.getElementById(field.id).addEventListener('input', updateTotalAmount);
+        });
+    }
+    
+    // 合計金額の更新
+    function updateTotalAmount() {
+        const formConfig = modelForms[currentModelType];
+        if (!formConfig) return;
+        
+        const inputData = {};
+        formConfig.fields.forEach(field => {
+            inputData[field.id] = parseFloat(document.getElementById(field.id).value) || 0;
+        });
+        
+        const total = formConfig.calculate(inputData);
+        totalAmount.textContent = `¥${total.toLocaleString()}`;
+    }
+    
+    // 売上記録の保存
+    saveButton.addEventListener('click', async function() {
+        const formConfig = modelForms[currentModelType];
+        if (!formConfig) return;
+        
+        const inputData = {
+            revenue_business_id: currentBusinessId,
+            month: monthSelect.value,
+            total_amount: parseInt(totalAmount.textContent.replace(/[¥,]/g, ''))
+        };
+        
+        formConfig.fields.forEach(field => {
+            inputData[field.id] = parseFloat(document.getElementById(field.id).value) || 0;
+        });
+        
+        try {
+            const response = await fetch('/numerical-plan/api/sales-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(inputData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(result.message);
+                loadSalesRecords();
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error('エラーが発生しました:', error);
+            alert('保存中にエラーが発生しました。');
+        }
+    });
+    
+    // 売上記録の読み込み
+    async function loadSalesRecords() {
+        try {
+            const response = await fetch(`/numerical-plan/api/sales-records/${currentBusinessId}`);
+            const records = await response.json();
+            
+            // テーブルの更新
+            salesTableBody.innerHTML = records.map(record => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm text-gray-900">${record.month}</td>
+                    <td class="px-4 py-2 text-sm text-right text-gray-900">¥${record.total_amount.toLocaleString()}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900">
+                        <button class="text-blue-600 hover:text-blue-800" onclick="showRecordDetail(${JSON.stringify(record)})">
+                            詳細を表示
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('売上記録の取得に失敗しました:', error);
+        }
+    }
+    
+    // 売上記録の詳細表示
+    window.showRecordDetail = function(record) {
+        const formConfig = modelForms[currentModelType];
+        if (!formConfig) return;
+        
+        let details = formConfig.fields.map(field => 
+            `${field.label}: ${record[field.id]?.toLocaleString() || 0}`
+        ).join('\n');
+        
+        alert(`${record.month}の詳細\n\n${details}\n\n合計: ¥${record.total_amount.toLocaleString()}`);
+    };
+    
+    // 初期表示時の月を設定
+    const now = new Date();
+    monthSelect.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+});
+</script>
+{% endblock %} 
