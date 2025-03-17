@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}収益モデル作成{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-8">
+  <h1 class="text-2xl font-bold mb-4">収益モデル作成</h1>
+  <form method="POST" action="">
+    <div class="mb-4">
+      <label for="name" class="block font-semibold mb-1">事業名</label>
+      <input type="text" name="name" id="name" class="border rounded w-full p-2" required>
+    </div>
+    <div class="mb-4">
+      <label for="model_type" class="block font-semibold mb-1">ビジネスモデル種別</label>
+      <select name="model_type" id="model_type" class="border rounded w-full p-2" required>
+        <option value="">選択してください</option>
+        <option value="unit">単価×数量</option>
+        <option value="usage">従量課金</option>
+        <option value="fixed">固定金額</option>
+        <option value="subscription">サブスク</option>
+        <option value="advertisement">広告収入</option>
+        <option value="project">プロジェクト</option>
+        <option value="hybrid">複合</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label for="description" class="block font-semibold mb-1">説明</label>
+      <textarea name="description" id="description" class="border rounded w-full p-2" rows="3"></textarea>
+    </div>
+    <div class="mb-4">
+      <label class="block font-semibold mb-1">タグ</label>
+      <input type="text" name="tags" class="border rounded w-full p-2" placeholder="例: 新規事業,オンライン">
+      <!-- 
+        複数タグ対応はJSで実装など 
+        上のように getlist('tags') に対応するには複数inputやJSが必要 
+      -->
+    </div>
+    <div class="text-right">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        保存
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %} 

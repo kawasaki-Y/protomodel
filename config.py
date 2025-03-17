@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 class Config:
     # アプリケーションのルートディレクトリ
@@ -8,8 +9,10 @@ class Config:
     DEBUG = True
     
     # 秘密鍵
-    SECRET_KEY = 'dev-secret-key'  # 本番環境では環境変数から読み込むこと
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev'
     
     # データベース設定 - SQLite
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, 'app.db')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False 
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///app.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=60) 

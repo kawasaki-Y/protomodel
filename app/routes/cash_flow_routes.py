@@ -10,15 +10,8 @@ cash_flow_bp = Blueprint('cash_flow', __name__, url_prefix='/cash-flow')
 @cash_flow_bp.route('/')
 @login_required
 def index():
-    """資金繰り計画一覧"""
-    # ユーザーに関連する事業計画を取得
-    business_plans = BusinessPlan.query.filter_by(user_id=current_user.id).all()
-    # 資金繰り計画一覧を取得
-    cash_flow_plans = CashFlowPlan.query.filter(
-        CashFlowPlan.business_plan_id.in_([bp.id for bp in business_plans])
-    ).all() if business_plans else []
-    
-    return render_template('cash_flow/index.html', cash_flow_plans=cash_flow_plans, business_plans=business_plans)
+    """資金繰り計画のメインページ"""
+    return render_template('cash_flow/index.html')
 
 @cash_flow_bp.route('/create', methods=['GET', 'POST'])
 @login_required

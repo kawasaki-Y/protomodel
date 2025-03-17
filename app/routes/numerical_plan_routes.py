@@ -109,57 +109,26 @@ def update_plan_items():
     db.session.commit()
     return jsonify({'success': True})
 
-@numerical_plan_bp.route('/revenue/wizard')
+@numerical_plan_bp.route('/revenue-model')
+@login_required
+def revenue_model():
+    """収益モデル作成ページ"""
+    return render_template('numerical_plan/revenue_model.html')
+
+@numerical_plan_bp.route('/revenue-wizard')
 @login_required
 def revenue_wizard():
-    """
-    収益事業モデル診断ウィザード
-    
-    ユーザーの回答に基づいて最適なビジネスモデルを提案する
-    """
-    return render_template('numerical_plan/revenue/wizard.html')
+    """収益モデル診断ウィザード"""
+    return render_template('numerical_plan/revenue_wizard.html')
 
-@numerical_plan_bp.route('/revenue/model/create', methods=['GET', 'POST'])
+@numerical_plan_bp.route('/create-revenue-model', methods=['GET', 'POST'])
 @login_required
 def create_revenue_model():
-    """
-    収益事業モデルの作成
-    
-    GET: 作成フォームの表示
-    POST: 新規モデルの保存
-    """
+    """収益モデル作成"""
     if request.method == 'POST':
-        try:
-            # リクエストデータの取得と新規モデルの作成
-            data = request.json
-            new_model = RevenueBusiness(
-                user_id=current_user.id,
-                name=data['name'],
-                model_type=data['model_type'],
-                description=data.get('description', ''),
-                tags=data.get('tags', [])
-            )
-            
-            # データベースへの保存
-            db.session.add(new_model)
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'message': '収益事業モデルを作成しました',
-                'model': new_model.to_dict()
-            })
-            
-        except Exception as e:
-            # エラー発生時のロールバックとエラーメッセージの返却
-            db.session.rollback()
-            return jsonify({
-                'success': False,
-                'message': f'エラーが発生しました: {str(e)}'
-            }), 400
-
-    # GET時はフォームを表示
-    return render_template('numerical_plan/revenue/create.html')
+        # POSTリクエストの処理
+        pass
+    return render_template('numerical_plan/create_revenue_model.html')
 
 @numerical_plan_bp.route('/revenue/sales')
 @login_required

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}収益モデル診断ウィザード{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-8">
+  <h1 class="text-2xl font-bold mb-4">収益モデル診断</h1>
+
+  <!-- 質問と選択式の例 -->
+  <div id="questionArea" class="space-y-4">
+    <div>
+      <label class="block font-semibold mb-1">1. 売上は「単価 × 数量」で表せますか？</label>
+      <select id="question1" class="border rounded p-2 w-64">
+        <option value="yes">はい</option>
+        <option value="no">いいえ</option>
+      </select>
+    </div>
+    <!-- 他の質問もここに追加可能 -->
+  </div>
+
+  <button id="analyzeBtn" class="bg-blue-600 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700">
+    結果を表示
+  </button>
+
+  <div id="resultArea" class="mt-8 hidden">
+    <h2 class="text-xl font-bold mb-2">結果</h2>
+    <p id="recommendedModel" class="mb-2"></p>
+    <a href="{{ url_for('revenue_model.create') }}" 
+       class="inline-block mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+      このモデルで事業を作成する
+    </a>
+  </div>
+</div>
+
+<script>
+document.getElementById('analyzeBtn').addEventListener('click', () => {
+  const q1 = document.getElementById('question1').value;
+
+  // サーバーに回答を送信
+  fetch('{{ url_for("revenue_model.wizard_submit") }}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question1: q1
+      // 他の質問があればまとめて送る
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    // レスポンスで返された提案モデルの情報を表示
+    document.getElementById('recommendedModel').textContent = 
+      `あなたにオススメのモデル：${data.recommended_name}`;
+    document.getElementById('resultArea').classList.remove('hidden');
+  });
+});
+</script>
+{% endblock %} 

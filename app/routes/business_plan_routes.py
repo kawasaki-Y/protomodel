@@ -5,8 +5,57 @@ from sqlalchemy.orm import joinedload
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import json
+from app.models.revenue_business import RevenueBusiness
+from app.models.sales_record import SalesRecord
 
 business_plan_bp = Blueprint('business_plan', __name__, url_prefix='/business-plan')
+
+@business_plan_bp.route('/')
+@login_required
+def index():
+    """
+    事業計画のメインページ
+    
+    収益計画や費用計画から集計したデータを損益計算書形式で表示する
+    """
+    # 収益事業モデルから売上データを集計
+    revenue_businesses = RevenueBusiness.query.filter_by(user_id=current_user.id).all()
+    
+    # 収益計画データの集計
+    revenue_total = 0
+    for business in revenue_businesses:
+        sales_records = SalesRecord.query.filter_by(revenue_business_id=business.id).all()
+        for record in sales_records:
+            revenue_total += record.total_amount
+    
+    # 損益計算書のデータ計算（仮の割合で計算）
+    cost_of_sales = int(revenue_total * 0.6)       # 売上原価（売上の60%と仮定）
+    gross_profit = revenue_total - cost_of_sales   # 粗利益
+    sga_expenses = int(revenue_total * 0.2)        # 販管費（売上の20%と仮定）
+    operating_profit = gross_profit - sga_expenses # 営業利益
+    
+    non_operating_income = int(revenue_total * 0.01)    # 営業外収益
+    non_operating_expenses = int(revenue_total * 0.02)  # 営業外費用
+    
+    ordinary_profit = operating_profit + non_operating_income - non_operating_expenses
+    income_before_tax = ordinary_profit   # 税引前当期純利益
+    tax = int(income_before_tax * 0.3)    # 法人税等（30%と仮定）
+    net_income = income_before_tax - tax  # 当期純利益
+    
+    return render_template(
+        'business_plan/index.html',
+        revenue_total=revenue_total,
+        cost_of_sales=cost_of_sales,
+        gross_profit=gross_profit,
+        sga_expenses=sga_expenses,
+        operating_profit=operating_profit,
+        non_operating_income=non_operating_income,
+        non_operating_expenses=non_operating_expenses,
+        ordinary_profit=ordinary_profit,
+        income_before_tax=income_before_tax,
+        tax=tax,
+        net_income=net_income
+    )
 
 @business_plan_bp.route('/current')
 @login_required
@@ -697,4 +746,14 @@ def save_next_plan():
         return jsonify({
             'success': False,
             'message': '保存中にエラーが発生しました。'
-        }), 500 
+        }), 500
+
+@business_plan_bp.route('/edit', methods=['GET', 'POST'])
+@login_required
+def edit():
+    """事業計画編集ページ"""
+    if request.method == 'POST':
+        # 編集機能の実装（後で実装）
+        return redirect(url_for('business_plan.index'))
+    
+    return render_template('business_plan/edit.html') 

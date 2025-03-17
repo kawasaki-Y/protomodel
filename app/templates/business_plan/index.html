@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}事業計画 - 事業計画システム{% endblock %}
+{% block page_title %}事業計画{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md">
+  <h2 class="text-xl font-semibold mb-4">事業計画概要</h2>
+  
+  <!-- 事業計画の概要情報 -->
+  <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+    <p class="text-gray-700">収益計画や費用計画などの数値情報を集計し、損益計算書形式で表示します。</p>
+  </div>
+  
+  <!-- 損益計算書 -->
+  <div class="mb-6">
+    <h3 class="text-lg font-medium mb-3">損益計算書</h3>
+    <table class="min-w-full border-collapse">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="py-2 px-4 border text-left">項目</th>
+          <th class="py-2 px-4 border text-right">金額</th>
+          <th class="py-2 px-4 border text-right">構成比</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 売上高 -->
+        <tr>
+          <td class="py-2 px-4 border font-medium">売上高</td>
+          <td class="py-2 px-4 border text-right">{{ revenue_total | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">100.0%</td>
+        </tr>
+        
+        <!-- 売上原価 -->
+        <tr>
+          <td class="py-2 px-4 border">売上原価</td>
+          <td class="py-2 px-4 border text-right">{{ cost_of_sales | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (cost_of_sales / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 売上総利益 -->
+        <tr class="bg-gray-50">
+          <td class="py-2 px-4 border font-medium">売上総利益</td>
+          <td class="py-2 px-4 border text-right font-medium">{{ gross_profit | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (gross_profit / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 販管費 -->
+        <tr>
+          <td class="py-2 px-4 border">販売費及び一般管理費</td>
+          <td class="py-2 px-4 border text-right">{{ sga_expenses | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (sga_expenses / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 営業利益 -->
+        <tr class="bg-gray-50">
+          <td class="py-2 px-4 border font-medium">営業利益</td>
+          <td class="py-2 px-4 border text-right font-medium">{{ operating_profit | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (operating_profit / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 営業外収益 -->
+        <tr>
+          <td class="py-2 px-4 border">営業外収益</td>
+          <td class="py-2 px-4 border text-right">{{ non_operating_income | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (non_operating_income / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 営業外費用 -->
+        <tr>
+          <td class="py-2 px-4 border">営業外費用</td>
+          <td class="py-2 px-4 border text-right">{{ non_operating_expenses | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (non_operating_expenses / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 経常利益 -->
+        <tr class="bg-gray-50">
+          <td class="py-2 px-4 border font-medium">経常利益</td>
+          <td class="py-2 px-4 border text-right font-medium">{{ ordinary_profit | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (ordinary_profit / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 税引前当期純利益 -->
+        <tr class="bg-gray-50">
+          <td class="py-2 px-4 border font-medium">税引前当期純利益</td>
+          <td class="py-2 px-4 border text-right font-medium">{{ income_before_tax | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (income_before_tax / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 法人税等 -->
+        <tr>
+          <td class="py-2 px-4 border">法人税等</td>
+          <td class="py-2 px-4 border text-right">{{ tax | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (tax / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+        
+        <!-- 当期純利益 -->
+        <tr class="bg-blue-50">
+          <td class="py-2 px-4 border font-semibold">当期純利益</td>
+          <td class="py-2 px-4 border text-right font-semibold">{{ net_income | format_number }} 円</td>
+          <td class="py-2 px-4 border text-right">{{ (net_income / revenue_total * 100) | round(1) if revenue_total else 0 }}%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="mt-6 flex justify-end">
+    <a href="{{ url_for('business_plan.edit') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      事業計画を編集
+    </a>
+  </div>
+</div>
+{% endblock %} 

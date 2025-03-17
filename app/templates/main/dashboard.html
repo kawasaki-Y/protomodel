@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード - 事業計画システム{% endblock %}
+
+{% block extra_head %}
+<style>
+.glass-effect {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.metric-value {
+    background: linear-gradient(135deg, #0396FF, #0D47A1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+</style>
+{% endblock %}
+
+{% block page_title %}ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- ウェルカムセクション -->
+    <div class="glass-effect rounded-2xl p-8 mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">
+            こんにちは、{{ current_user.username }}さん
+        </h1>
+        <p class="text-gray-600">今日も素晴らしい一日にしましょう</p>
+    </div>
+
+    <!-- メインダッシュボード -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- 売上概要カード -->
+        <div class="card bg-white rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">月間売上</h3>
+                <i class="fas fa-chart-line text-blue-500"></i>
+            </div>
+            <p class="text-3xl font-bold metric-value">
+                ¥{{ total_monthly_sales | format_number }}
+            </p>
+            <p class="text-sm text-gray-500 mt-2">
+                前月比 
+                {% if sales_growth > 0 %}
+                <span class="text-green-500">+{{ sales_growth }}%</span>
+                {% else %}
+                <span class="text-red-500">{{ sales_growth }}%</span>
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- 収益モデル数カード -->
+        <div class="card bg-white rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">収益モデル数</h3>
+                <i class="fas fa-cubes text-purple-500"></i>
+            </div>
+            <p class="text-3xl font-bold metric-value">
+                {{ revenue_businesses | length }}
+            </p>
+            <p class="text-sm text-gray-500 mt-2">アクティブなモデル</p>
+        </div>
+
+        <!-- 目標達成率カード -->
+        <div class="card bg-white rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">目標達成率</h3>
+                <i class="fas fa-bullseye text-red-500"></i>
+            </div>
+            <p class="text-3xl font-bold metric-value">{{ achievement_rate }}%</p>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ achievement_rate }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- グラフセクション -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- 売上推移グラフ -->
+        <div class="card bg-white rounded-2xl p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">売上推移</h3>
+            <canvas id="revenueChart" height="300"></canvas>
+        </div>
+
+        <!-- 収益構成グラフ -->
+        <div class="card bg-white rounded-2xl p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">収益構成</h3>
+            <canvas id="compositionChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- 最近の活動 -->
+    <div class="card bg-white rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">最近の活動</h3>
+        <div class="space-y-4">
+            {% for activity in recent_activities %}
+            <div class="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-circle text-blue-500 text-xs"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-800">{{ activity.description }}</p>
+                    <p class="text-sm text-gray-500">{{ activity.created_at.strftime('%Y年%m月%d日 %H:%M') }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 売上推移グラフ
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+            datasets: [{
+                label: '売上',
+                data: {{ monthly_sales | tojson }},
+                borderColor: '#0396FF',
+                tension: 0.4,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        display: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // 収益構成グラフ
+    const compositionCtx = document.getElementById('compositionChart').getContext('2d');
+    new Chart(compositionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ revenue_composition_labels | tojson }},
+            datasets: [{
+                data: {{ revenue_composition_data | tojson }},
+                backgroundColor: [
+                    '#0396FF',
+                    '#32CCBC',
+                    '#FF6B6B',
+                    '#794AFF',
+                    '#FFB86C'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 
