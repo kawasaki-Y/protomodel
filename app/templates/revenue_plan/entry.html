@@ -9,7 +9,7 @@
       <i class="fas fa-arrow-left mr-1"></i> 戻る
     </a>
   </div>
-  
+
   <div class="bg-white rounded-lg shadow-md p-6">
     <div class="mb-4 pb-4 border-b">
       <div class="flex justify-between items-start">
@@ -18,7 +18,7 @@
           <div class="text-sm text-gray-500 mt-1">
             <span class="inline-block bg-blue-100 text-blue-600 px-2 py-1 rounded mr-1">{{ business.model_type }}</span>
             {% for tag in business.tags %}
-              <span class="inline-block bg-gray-100 text-gray-600 px-2 py-1 rounded mr-1">{{ tag }}</span>
+            <span class="inline-block bg-gray-100 text-gray-600 px-2 py-1 rounded mr-1">{{ tag }}</span>
             {% endfor %}
           </div>
         </div>
@@ -28,95 +28,77 @@
         </div>
       </div>
     </div>
-    
+
     <div class="mb-4">
       <h3 class="text-lg font-medium mb-2">月別売上データ</h3>
-      
+
       <!-- ビジネスモデルタイプに応じた入力フォーム -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for month in months %}
         <div class="border rounded-lg p-4" data-month="{{ month.key }}" id="month-{{ month.key }}">
           <h4 class="font-medium mb-3">{{ month.name }}</h4>
-          
+
           {% if business.model_type == 'unit' %}
-            <!-- 単価×数量モデル -->
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">単価 (円)</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 unit-price" 
-                     value="{{ month.record.unit_price if month.record else 0 }}"
-                     min="0">
-            </div>
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">数量</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 quantity" 
-                     value="{{ month.record.quantity if month.record else 0 }}"
-                     min="0">
-            </div>
-            
+          <!-- 単価×数量モデル -->
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">単価 (円)</label>
+            <input type="number" class="border rounded w-full p-2 unit-price"
+              value="{{ month.record.unit_price if month.record else 0 }}" min="0">
+          </div>
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">数量</label>
+            <input type="number" class="border rounded w-full p-2 quantity"
+              value="{{ month.record.quantity if month.record else 0 }}" min="0">
+          </div>
+
           {% elif business.model_type == 'subscription' %}
-            <!-- サブスクリプションモデル -->
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">契約者数</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 subscriber-count" 
-                     value="{{ month.record.subscriber_count if month.record else 0 }}"
-                     min="0">
-            </div>
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">月額料金 (円)</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 monthly-fee" 
-                     value="{{ month.record.monthly_fee if month.record else 0 }}"
-                     min="0">
-            </div>
-            
+          <!-- サブスクリプションモデル -->
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">契約者数</label>
+            <input type="number" class="border rounded w-full p-2 subscriber-count"
+              value="{{ month.record.subscriber_count if month.record else 0 }}" min="0">
+          </div>
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">月額料金 (円)</label>
+            <input type="number" class="border rounded w-full p-2 monthly-fee"
+              value="{{ month.record.monthly_fee if month.record else 0 }}" min="0">
+          </div>
+
           {% elif business.model_type == 'advertisement' %}
-            <!-- 広告収入モデル -->
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">広告表示回数</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 ad-impression" 
-                     value="{{ month.record.ad_impression if month.record else 0 }}"
-                     min="0">
-            </div>
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">広告単価 (円)</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 ad-unit-price" 
-                     value="{{ month.record.ad_unit_price if month.record else 0 }}"
-                     min="0">
-            </div>
-            
+          <!-- 広告収入モデル -->
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">広告表示回数</label>
+            <input type="number" class="border rounded w-full p-2 ad-impression"
+              value="{{ month.record.ad_impression if month.record else 0 }}" min="0">
+          </div>
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">広告単価 (円)</label>
+            <input type="number" class="border rounded w-full p-2 ad-unit-price"
+              value="{{ month.record.ad_unit_price if month.record else 0 }}" min="0">
+          </div>
+
           {% elif business.model_type == 'project' %}
-            <!-- プロジェクトモデル -->
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">プロジェクト数</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 project-count" 
-                     value="{{ month.record.project_count if month.record else 0 }}"
-                     min="0">
-            </div>
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">プロジェクト単価 (円)</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 project-unit-price" 
-                     value="{{ month.record.project_unit_price if month.record else 0 }}"
-                     min="0">
-            </div>
-            
+          <!-- プロジェクトモデル -->
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">プロジェクト数</label>
+            <input type="number" class="border rounded w-full p-2 project-count"
+              value="{{ month.record.project_count if month.record else 0 }}" min="0">
+          </div>
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">プロジェクト単価 (円)</label>
+            <input type="number" class="border rounded w-full p-2 project-unit-price"
+              value="{{ month.record.project_unit_price if month.record else 0 }}" min="0">
+          </div>
+
           {% else %}
-            <!-- その他のモデル（直接金額入力） -->
-            <div class="mb-2">
-              <label class="block text-sm text-gray-600 mb-1">売上金額 (円)</label>
-              <input type="number" 
-                     class="border rounded w-full p-2 total-amount" 
-                     value="{{ month.record.total_amount if month.record else 0 }}"
-                     min="0">
-            </div>
+          <!-- その他のモデル（直接金額入力） -->
+          <div class="mb-2">
+            <label class="block text-sm text-gray-600 mb-1">売上金額 (円)</label>
+            <input type="number" class="border rounded w-full p-2 total-amount"
+              value="{{ month.record.total_amount if month.record else 0 }}" min="0">
+          </div>
           {% endif %}
-          
+
           <div class="mt-4">
             <div class="text-right">
               <div class="text-lg font-medium month-total">
@@ -135,26 +117,27 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const businessId = {{ business.id }};
+  document.addEventListener('DOMContentLoaded', function () {
+    const businessId = {{ business.id }
+  };
   const businessType = '{{ business.model_type }}';
   let monthlyData = {};
-  
+
   // 保存ボタンにイベントリスナーを追加
   document.querySelectorAll('.save-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', function () {
       const monthCard = this.closest('[data-month]');
       const month = monthCard.getAttribute('data-month');
-      
+
       // ビジネスモデルに応じたデータ収集
       let data = { month };
-      
+
       if (businessType === 'unit') {
         const unitPrice = parseInt(monthCard.querySelector('.unit-price').value) || 0;
         const quantity = parseInt(monthCard.querySelector('.quantity').value) || 0;
         data.unit_price = unitPrice;
         data.quantity = quantity;
-      } 
+      }
       else if (businessType === 'subscription') {
         const subscriberCount = parseInt(monthCard.querySelector('.subscriber-count').value) || 0;
         const monthlyFee = parseInt(monthCard.querySelector('.monthly-fee').value) || 0;
@@ -177,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalAmount = parseInt(monthCard.querySelector('.total-amount').value) || 0;
         data.total_amount = totalAmount;
       }
-      
+
       // データをサーバに送信
       fetch(`/revenue-plan/save/${businessId}`, {
         method: 'POST',
@@ -186,37 +169,37 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         body: JSON.stringify(data)
       })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          // 成功メッセージを表示
-          monthCard.querySelector('.month-total').textContent = 
-            result.record.total_amount.toLocaleString() + ' 円';
-          
-          // 金額を更新
-          updateTotalRevenue();
-          
-          // 成功エフェクト
-          monthCard.classList.add('bg-green-50');
-          setTimeout(() => {
-            monthCard.classList.remove('bg-green-50');
-          }, 1500);
-        } else {
-          alert('エラー: ' + result.message);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('保存中にエラーが発生しました。');
-      });
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            // 成功メッセージを表示
+            monthCard.querySelector('.month-total').textContent =
+              result.record.total_amount.toLocaleString() + ' 円';
+
+            // 金額を更新
+            updateTotalRevenue();
+
+            // 成功エフェクト
+            monthCard.classList.add('bg-green-50');
+            setTimeout(() => {
+              monthCard.classList.remove('bg-green-50');
+            }, 1500);
+          } else {
+            alert('エラー: ' + result.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('保存中にエラーが発生しました。');
+        });
     });
   });
-  
+
   // 入力値変更時のリアルタイム計算
   function setupRealTimeCalculation() {
     if (businessType === 'unit') {
       document.querySelectorAll('.unit-price, .quantity').forEach(input => {
-        input.addEventListener('input', function() {
+        input.addEventListener('input', function () {
           const monthCard = this.closest('[data-month]');
           const unitPrice = parseInt(monthCard.querySelector('.unit-price').value) || 0;
           const quantity = parseInt(monthCard.querySelector('.quantity').value) || 0;
@@ -227,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     else if (businessType === 'subscription') {
       document.querySelectorAll('.subscriber-count, .monthly-fee').forEach(input => {
-        input.addEventListener('input', function() {
+        input.addEventListener('input', function () {
           const monthCard = this.closest('[data-month]');
           const subscriberCount = parseInt(monthCard.querySelector('.subscriber-count').value) || 0;
           const monthlyFee = parseInt(monthCard.querySelector('.monthly-fee').value) || 0;
@@ -238,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // 他のモデルタイプも同様に実装...
   }
-  
+
   // 合計金額の更新
   function updateTotalRevenue() {
     let total = 0;
@@ -248,10 +231,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('totalRevenue').textContent = '¥' + total.toLocaleString();
   }
-  
+
   // 初期化
   setupRealTimeCalculation();
   updateTotalRevenue();
 });
 </script>
-{% endblock %} 
+{% endblock %}

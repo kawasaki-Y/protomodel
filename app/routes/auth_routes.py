@@ -3,6 +3,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models.user import User
 from functools import wraps
+import secrets
+from datetime import datetime, timedelta
 
 # 認証関連の機能をまとめたBlueprint
 auth_bp = Blueprint('auth', __name__)
@@ -31,7 +33,7 @@ def admin_required(f):
 @auth_bp.route('/')
 def index():
     if current_user.is_authenticated:
-        return redirect(url_for('numerical_plan.index'))
+        return redirect(url_for('main.dashboard'))
     return redirect(url_for('auth.login'))
 
 # ログイン機能
@@ -44,24 +46,26 @@ def login():
     GET: ログインフォームの表示
     POST: ユーザー認証と処理
     """
-    # ログイン済みの場合はダッシュボードへリダイレクト
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
-
+    
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        remember = request.form.get('remember', False)
-
-        # ユーザー認証
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
-            login_user(user, remember=remember)
-            # ログイン後のリダイレクト先を取得
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('main.dashboard'))
         
-        flash('メールアドレスまたはパスワードが正しくありません。', 'error')
+        user = User.query.filter_by(email=email).first()
+        
+        if user is None or not user.check_password(password):
+            flash('メールアドレスまたはパスワードが正しくありません', 'error')
+            return redirect(url_for('auth.login'))
+        
+        # ログイン成功
+        login_user(user)
+        next_page = request.args.get('next')
+        if not next_page or url_parse(next_page).netloc != '':
+            next_page = url_for('main.dashboard')
+        
+        return redirect(next_page)
     
     return render_template('auth/login.html')
 
@@ -290,4 +294,83 @@ def delete_user(user_id):
     db.session.commit()
     
     flash(f'ユーザー {user.username} が削除されました', 'success')
-    return redirect(url_for('auth.manage_users')) 
+    return redirect(url_for('auth.manage_users'))
+
+# パスワードリセットトークンのモデル追加
+class PasswordReset(db.Model):
+    __tablename__ = 'password_resets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    token = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def is_valid(self):
+        """トークンが24時間以内か確認"""
+        expiration = self.created_at + timedelta(hours=24)
+        return datetime.utcnow() <= expiration
+
+# パスワードリセットのルート
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # 既存のリセットトークンを削除
+            PasswordReset.query.filter_by(email=email).delete()
+            
+            # 新しいトークンを生成
+            token = secrets.token_urlsafe(64)
+            reset = PasswordReset(email=email, token=token)
+            db.session.add(reset)
+            db.session.commit()
+            
+            # メール送信のコードをここに追加（実装は省略）
+            # send_password_reset_email(user, token)
+            
+            # メール送信の代わりにトークンを表示（開発用）
+            flash(f'パスワードリセット用URL: {url_for("auth.reset_password", token=token, _external=True)}', 'info')
+        
+        flash('パスワードリセットの手順をメールで送信しました（存在する場合）', 'info')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('auth/forgot_password.html')
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    reset = PasswordReset.query.filter_by(token=token).first()
+    
+    if not reset or not reset.is_valid():
+        flash('無効または期限切れのトークンです', 'error')
+        return redirect(url_for('auth.forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if password != confirm_password:
+            flash('パスワードが一致しません', 'error')
+            return redirect(url_for('auth.reset_password', token=token))
+        
+        user = User.query.filter_by(email=reset.email).first()
+        if user:
+            user.set_password(password)
+            
+            # リセットトークンを削除
+            PasswordReset.query.filter_by(email=reset.email).delete()
+            db.session.commit()
+            
+            flash('パスワードがリセットされました。新しいパスワードでログインしてください', 'success')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('エラーが発生しました', 'error')
+    
+    return render_template('auth/reset_password.html') 

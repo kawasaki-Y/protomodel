@@ -74,6 +74,7 @@ def create_app():
         from app.routes.settings_routes import settings_bp
         from app.routes.revenue_model_routes import revenue_model_bp
         from app.routes.revenue_plan_routes import revenue_plan_bp
+        from app.routes.debug_routes import debug_bp
 
         # 各Blueprintを登録
         app.register_blueprint(auth_bp)
@@ -89,6 +90,7 @@ def create_app():
         app.register_blueprint(settings_bp, url_prefix='/settings')
         app.register_blueprint(revenue_model_bp)
         app.register_blueprint(revenue_plan_bp)
+        app.register_blueprint(debug_bp)
 
         # データベースの作成
         db.create_all()
