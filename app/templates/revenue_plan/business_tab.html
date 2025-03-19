@@ -1,0 +1,144 @@
+<div class="space-y-6">
+  <div class="flex justify-between items-center">
+    <h2 class="text-xl font-semibold">事業設定</h2>
+    <button id="add-business-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+      <i class="fas fa-plus mr-2"></i> 事業追加
+    </button>
+  </div>
+
+  <div class="text-sm text-gray-600 bg-blue-50 p-4 rounded-lg mb-4">
+    <p><i class="fas fa-info-circle mr-1"></i> ここでは収益事業、商品、顧客・市場のマスターデータを設定できます。「売上計画入力」タブでこれらのデータを使用して月次の売上計画を入力します。
+    </p>
+  </div>
+
+  {% if businesses %}
+  <div class="space-y-8">
+    {% for business in businesses %}
+    <div class="bg-white rounded-lg border p-4 shadow-sm business-card" data-business-id="{{ business.id }}">
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <h3 class="font-medium text-lg text-gray-800">{{ business.name }}</h3>
+          <p class="text-sm text-gray-600">{{ business.description or '説明なし' }}</p>
+        </div>
+        <div class="flex space-x-2">
+          <button class="text-blue-600 hover:text-blue-800 edit-business-btn">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="text-red-600 hover:text-red-800 delete-business-btn">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div class="border rounded-lg p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="font-medium text-gray-700">商品・サービス</h4>
+            <button class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs add-product-btn"
+              data-business-id="{{ business.id }}">
+              <i class="fas fa-plus mr-1"></i> 追加
+            </button>
+          </div>
+
+          <div class="products-list">
+            {% if business.products %}
+            <div class="bg-gray-50 p-3 rounded overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead>
+                  <tr class="border-b">
+                    <th class="text-left py-2 px-2">商品名</th>
+                    <th class="text-right py-2 px-2">標準単価</th>
+                    <th class="text-center py-2 px-2">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for product in business.products %}
+                  <tr class="hover:bg-gray-100">
+                    <td class="py-2 px-2">{{ product.name }}</td>
+                    <td class="text-right py-2 px-2">{{ product.unit_price|default(0)|round|int|format_number }}{{
+                      product.price_unit }}</td>
+                    <td class="text-center py-2 px-2">
+                      <button class="text-blue-600 hover:text-blue-800 edit-product-btn"
+                        data-product-id="{{ product.id }}">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="text-red-600 hover:text-red-800 delete-product-btn"
+                        data-product-id="{{ product.id }}">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="text-center py-3 text-gray-500">
+              <p>商品がありません</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="border rounded-lg p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="font-medium text-gray-700">顧客・市場</h4>
+            <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs add-market-btn"
+              data-business-id="{{ business.id }}">
+              <i class="fas fa-plus mr-1"></i> 追加
+            </button>
+          </div>
+
+          <div class="markets-list">
+            {% if business.markets %}
+            <div class="bg-gray-50 p-3 rounded overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead>
+                  <tr class="border-b">
+                    <th class="text-left py-2 px-2">顧客・市場名</th>
+                    <th class="text-center py-2 px-2">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for market in business.markets %}
+                  <tr class="hover:bg-gray-100">
+                    <td class="py-2 px-2">{{ market.name }}</td>
+                    <td class="text-center py-2 px-2">
+                      <button class="text-blue-600 hover:text-blue-800 edit-market-btn"
+                        data-market-id="{{ market.id }}">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="text-red-600 hover:text-red-800 delete-market-btn"
+                        data-market-id="{{ market.id }}">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="text-center py-3 text-gray-500">
+              <p>顧客・市場がありません</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white border rounded-lg p-8 text-center">
+    <div class="text-gray-400 mb-4">
+      <i class="fas fa-building text-5xl"></i>
+    </div>
+    <h3 class="text-xl font-medium text-gray-800 mb-2">事業が登録されていません</h3>
+    <p class="text-gray-600 mb-4">収益計画を作成するには、まず事業を登録してください。</p>
+    <button id="add-first-business-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+      最初の事業を追加
+    </button>
+  </div>
+  {% endif %}
+</div>

@@ -313,32 +313,7 @@ class PasswordReset(db.Model):
 # パスワードリセットのルート
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
-    
-    if request.method == 'POST':
-        email = request.form.get('email')
-        user = User.query.filter_by(email=email).first()
-        
-        if user:
-            # 既存のリセットトークンを削除
-            PasswordReset.query.filter_by(email=email).delete()
-            
-            # 新しいトークンを生成
-            token = secrets.token_urlsafe(64)
-            reset = PasswordReset(email=email, token=token)
-            db.session.add(reset)
-            db.session.commit()
-            
-            # メール送信のコードをここに追加（実装は省略）
-            # send_password_reset_email(user, token)
-            
-            # メール送信の代わりにトークンを表示（開発用）
-            flash(f'パスワードリセット用URL: {url_for("auth.reset_password", token=token, _external=True)}', 'info')
-        
-        flash('パスワードリセットの手順をメールで送信しました（存在する場合）', 'info')
-        return redirect(url_for('auth.login'))
-    
+    """パスワード再設定ページを表示します"""
     return render_template('auth/forgot_password.html')
 
 @auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])

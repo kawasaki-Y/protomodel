@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}事業計画システム{% endblock %}</title>
-    <!-- Tailwind CSS (CDN) -->
+    <title>{% block title %}経営管理システム{% endblock %}</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js (CDN) -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- カスタムCSS -->
     <style>
+        /* サイドバーのスタイル */
         .sidebar {
             height: 100vh;
             position: fixed;
@@ -19,296 +20,243 @@
             left: 0;
             width: 250px;
             overflow-y: auto;
+            z-index: 100;
+            transition: all 0.3s;
         }
-        
+
         .main-content {
             margin-left: 250px;
-            padding: 20px;
             min-height: 100vh;
+            transition: margin-left 0.3s;
         }
-        
+
+        /* モバイル対応 */
         @media (max-width: 768px) {
             .sidebar {
                 width: 0;
                 overflow: hidden;
-                transition: width 0.3s;
             }
-            
+
             .sidebar.open {
                 width: 250px;
             }
-            
+
             .main-content {
                 margin-left: 0;
-                transition: margin-left 0.3s;
             }
-            
+
             .main-content.sidebar-open {
                 margin-left: 250px;
             }
-        }
-        
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .dropdown-menu {
-            display: none;
-            position: absolute;
-            right: 0;
-            min-width: 10rem;
-            z-index: 20;
-        }
-        
-        .dropdown.open .dropdown-menu {
-            display: block;
-        }
-        
-        /* サイドバーのドロップダウンメニュー用スタイル */
-        .sidebar-dropdown {
-            position: relative;
-        }
-        
-        .sidebar-dropdown-menu {
-            display: none;
-            position: relative;
-            padding-left: 2.5rem;
-            background-color: rgba(55, 65, 81, 0.5);
-        }
-        
-        .sidebar-dropdown:hover .sidebar-dropdown-menu {
-            display: block;
-        }
-        
-        .sidebar-dropdown-menu a {
-            padding: 0.5rem 1rem;
-            display: block;
-            color: white;
-            transition: background-color 0.2s;
-        }
-        
-        .sidebar-dropdown-menu a:hover {
-            background-color: rgba(55, 65, 81, 0.8);
+
+            .mobile-menu-btn {
+                display: block;
+            }
         }
 
-        .sidebar {
-            z-index: 100;
+        /* メニュー階層スタイル */
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
-        .group:hover > ul, 
-        .group/sub:hover > ul,
-        .group/sub2:hover > ul,
-        .group/sub3:hover > ul,
-        .group/sub4:hover > ul {
+
+        .sidebar-link,
+        .sidebar-sublink,
+        .sidebar-sub-sublink,
+        .sidebar-sub-sub-sublink {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #f3f4f6;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-sublink:hover,
+        .sidebar-sub-sublink:hover,
+        .sidebar-sub-sub-sublink:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .submenu,
+        .sub-submenu,
+        .sub-sub-submenu {
+            display: none;
+            background-color: rgba(0, 0, 0, 0.2);
+            list-style: none;
+            padding: 0;
+        }
+
+        .submenu.active,
+        .sub-submenu.active,
+        .sub-sub-submenu.active {
             display: block;
+        }
+
+        .sidebar-sublink {
+            padding-left: 2.5rem;
+        }
+
+        .sidebar-sub-sublink {
+            padding-left: 3.5rem;
+        }
+
+        .sidebar-sub-sub-sublink {
+            padding-left: 4.5rem;
+        }
+
+        .submenu-arrow {
+            transition: transform 0.2s;
+        }
+
+        .has-submenu.active .submenu-arrow {
+            transform: rotate(180deg);
         }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
+
 <body class="bg-gray-100">
-    <div class="min-h-screen flex">
-        <!-- サイドバー -->
-        <nav class="sidebar bg-gray-800 text-white w-64 min-h-screen fixed left-0 top-0">
-            <!-- ロゴ部分 -->
-            <div class="p-4 border-b border-gray-700">
-                <h1 class="text-xl font-bold">事業計画システム</h1>
-            </div>
+    <!-- サイドバー -->
+    {% include 'partials/sidebar.html' %}
 
-            <!-- メニューリスト -->
-            <ul class="py-4" id="sidebarMenu">
-                <!-- ダッシュボード -->
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('main.dashboard') }}" class="flex items-center">
-                        <i class="fas fa-chart-line mr-3"></i>
-                        <span>ダッシュボード</span>
-                    </a>
-                </li>
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+        <!-- トップヘッダー -->
+        <header class="bg-white shadow">
+            <div class="flex justify-between items-center px-4 py-3">
+                <!-- モバイルメニューボタン -->
+                <button class="mobile-menu-btn hidden md:hidden text-gray-600 focus:outline-none" id="mobileMenuBtn">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
 
-                <!-- 単年事業計画 -->
-                <li>
-                    <div class="px-4 py-2 hover:bg-gray-700 cursor-pointer flex items-center justify-between menu-item" data-target="yearlyPlanMenu">
-                        <div class="flex items-center">
-                            <i class="fas fa-calendar-alt mr-3"></i>
-                            <span>単年事業計画</span>
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
+                <h1 class="text-xl font-semibold text-gray-800">{% block page_title %}{% endblock %}</h1>
+
+                <div class="flex items-center space-x-4">
+                    <!-- アクションエリア -->
+                    <div>
+                        {% block page_actions %}{% endblock %}
                     </div>
-                    
-                    <!-- 単年事業計画のサブメニュー -->
-                    <ul class="bg-gray-700 hidden pl-8" id="yearlyPlanMenu">
-                        <li class="py-2 hover:bg-gray-600">
-                            <a href="{{ url_for('business_plan.index') }}">事業計画</a>
-                        </li>
-                        <li>
-                            <div class="py-2 hover:bg-gray-600 cursor-pointer flex items-center justify-between menu-item" data-target="numericalPlanMenu">
-                                <span>数値計画</span>
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
-                            
-                            <!-- 数値計画のサブメニュー -->
-                            <ul class="bg-gray-600 hidden pl-4" id="numericalPlanMenu">
-                                <li>
-                                    <div class="py-2 hover:bg-gray-500 cursor-pointer flex items-center justify-between menu-item" data-target="revenuePlanMenu">
-                                        <span>収益計画</span>
-                                        <i class="fas fa-chevron-right"></i>
-                                    </div>
-                                    
-                                    <!-- 収益計画のサブメニュー -->
-                                    <ul class="bg-gray-500 hidden pl-4" id="revenuePlanMenu">
-                                        <li>
-                                            <div class="py-2 hover:bg-gray-400 cursor-pointer flex items-center justify-between menu-item" data-target="salesRevenueMenu">
-                                                <span>売上による収益</span>
-                                                <i class="fas fa-chevron-right"></i>
-                                            </div>
-                                            
-                                            <!-- 売上による収益のサブメニュー -->
-                                            <ul class="bg-gray-400 hidden pl-4" id="salesRevenueMenu">
-                                                <li class="py-2 hover:bg-gray-300">
-                                                    <a href="{{ url_for('revenue_plan.index') }}" class="text-gray-800">収益計画の入力</a>
-                                                </li>
-                                                <li>
-                                                    <div class="py-2 hover:bg-gray-300 cursor-pointer flex items-center justify-between menu-item" data-target="revenueItemMenu">
-                                                        <span class="text-gray-800">収益項目の設定</span>
-                                                        <i class="fas fa-chevron-right"></i>
-                                                    </div>
-                                                    
-                                                    <!-- 収益項目の設定のサブメニュー -->
-                                                    <ul class="bg-gray-300 hidden pl-4" id="revenueItemMenu">
-                                                        <li class="py-2 hover:bg-gray-200">
-                                                            <a href="{{ url_for('revenue_model.wizard') }}" class="text-gray-800">収益モデル診断</a>
-                                                        </li>
-                                                        <li class="py-2 hover:bg-gray-200">
-                                                            <a href="{{ url_for('revenue_model.create') }}" class="text-gray-800">収益モデル作成</a>
-                                                        </li>
-                                                    </ul>
-                                                </li>
-                                            </ul>
-                                        </li>
-                                        <li class="py-2 hover:bg-gray-400">
-                                            <a href="#" class="text-white">それ以外の収益</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="py-2 hover:bg-gray-500">
-                                    <a href="#" class="text-white">費用計画</a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </li>
 
-                <!-- その他のメニュー項目 -->
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('future_plan.index') }}" class="flex items-center">
-                        <i class="fas fa-forward mr-3"></i>
-                        <span>次年度以降計画</span>
-                    </a>
-                </li>
-                
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('cash_flow.index') }}" class="flex items-center">
-                        <i class="fas fa-money-bill-wave mr-3"></i>
-                        <span>資金繰り計画</span>
-                    </a>
-                </li>
+                    <!-- ユーザーメニュー -->
+                    <div class="relative">
+                        <button class="flex items-center text-gray-700 focus:outline-none" id="userMenuBtn">
+                            <span class="hidden md:block mr-2">{{ current_user.username }}</span>
+                            <img src="{{ url_for('static', filename='img/default-avatar.png') }}" alt="ユーザーアバター"
+                                class="w-8 h-8 rounded-full">
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
 
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('capital_policy.index') }}" class="flex items-center">
-                        <i class="fas fa-coins mr-3"></i>
-                        <span>資本政策</span>
-                    </a>
-                </li>
-
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('analysis.index') }}" class="flex items-center">
-                        <i class="fas fa-chart-pie mr-3"></i>
-                        <span>分析情報</span>
-                    </a>
-                </li>
-
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('reports.index') }}" class="flex items-center">
-                        <i class="fas fa-file-alt mr-3"></i>
-                        <span>各種レポート</span>
-                    </a>
-                </li>
-
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('account.index') }}" class="flex items-center">
-                        <i class="fas fa-list mr-3"></i>
-                        <span>勘定科目設定</span>
-                    </a>
-                </li>
-
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('settings.index') }}" class="flex items-center">
-                        <i class="fas fa-cog mr-3"></i>
-                        <span>各種設定</span>
-                    </a>
-                </li>
-
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('auth.profile') }}" class="flex items-center">
-                        <i class="fas fa-user mr-3"></i>
-                        <span>マイプロフィール</span>
-                    </a>
-                </li>
-
-                <li class="px-4 py-2 hover:bg-gray-700">
-                    <a href="{{ url_for('auth.logout') }}" class="flex items-center">
-                        <i class="fas fa-sign-out-alt mr-3"></i>
-                        <span>ログアウト</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <!-- メインコンテンツ -->
-        <div class="flex-1">
-            <header class="bg-white shadow">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    <h2 class="text-2xl font-bold text-gray-900">
-                        {% block page_title %}{% endblock %}
-                    </h2>
+                        <div class="absolute right-0 w-48 mt-2 bg-white rounded-md shadow-lg hidden" id="userMenu">
+                            <a href="{{ url_for('auth.profile') }}"
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i> プロフィール
+                            </a>
+                            <a href="{{ url_for('settings.index') }}"
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i> 設定
+                            </a>
+                            <div class="border-t border-gray-100"></div>
+                            <a href="{{ url_for('auth.logout') }}"
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i> ログアウト
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                {% block content %}{% endblock %}
-            </main>
-        </div>
+        <!-- メインエリア -->
+        <main class="p-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="mb-4 p-4 rounded-md 
+                            {% if category == 'success' %}
+                                bg-green-100 text-green-700 border border-green-200
+                            {% elif category == 'error' %}
+                                bg-red-100 text-red-700 border border-red-200
+                            {% elif category == 'warning' %}
+                                bg-yellow-100 text-yellow-700 border border-yellow-200
+                            {% else %}
+                                bg-blue-100 text-blue-700 border border-blue-200
+                            {% endif %}
+                        ">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- フッター -->
+        <footer class="bg-white py-4 px-6 border-t">
+            <div class="flex justify-between items-center">
+                <p class="text-gray-600 text-sm">© 2023 経営管理システム</p>
+                <p class="text-gray-500 text-sm">バージョン 1.0.0</p>
+            </div>
+        </footer>
     </div>
 
-    <!-- Font Awesome -->
-    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
-
-    <!-- JavaScript for Menu Toggle -->
+    <!-- JavaScript -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // メニューアイテムにクリックイベントを設定
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', function() {
-                // 対象のサブメニューID
-                const targetId = this.getAttribute('data-target');
-                const targetMenu = document.getElementById(targetId);
-                
-                // メニューの開閉
-                if (targetMenu.classList.contains('hidden')) {
-                    targetMenu.classList.remove('hidden');
-                    this.querySelector('i:last-child').classList.remove('fa-chevron-right', 'fa-chevron-down');
-                    this.querySelector('i:last-child').classList.add(
-                        targetId === 'yearlyPlanMenu' ? 'fa-chevron-up' : 'fa-chevron-down'
-                    );
-                } else {
-                    targetMenu.classList.add('hidden');
-                    this.querySelector('i:last-child').classList.remove('fa-chevron-up', 'fa-chevron-down');
-                    this.querySelector('i:last-child').classList.add(
-                        targetId === 'yearlyPlanMenu' ? 'fa-chevron-down' : 'fa-chevron-right'
-                    );
-                }
+        document.addEventListener('DOMContentLoaded', function () {
+            // サイドバーのサブメニュー制御
+            const menuLinks = document.querySelectorAll('.has-submenu');
+            menuLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    // サブメニューのID取得
+                    const submenuId = this.getAttribute('data-submenu') + '-submenu';
+                    const submenu = document.getElementById(submenuId);
+
+                    // 開閉状態の切り替え
+                    if (submenu) {
+                        submenu.classList.toggle('active');
+                        this.classList.toggle('active');
+                    }
+                });
             });
+
+            // モバイルメニュー制御
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', function () {
+                    const sidebar = document.querySelector('.sidebar');
+                    const mainContent = document.querySelector('.main-content');
+
+                    sidebar.classList.toggle('open');
+                    mainContent.classList.toggle('sidebar-open');
+                });
+            }
+
+            // ユーザーメニュー制御
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userMenu = document.getElementById('userMenu');
+
+            if (userMenuBtn && userMenu) {
+                userMenuBtn.addEventListener('click', function () {
+                    userMenu.classList.toggle('hidden');
+                });
+
+                // 外部クリックでメニューを閉じる
+                document.addEventListener('click', function (e) {
+                    if (!userMenuBtn.contains(e.target) && !userMenu.contains(e.target)) {
+                        userMenu.classList.add('hidden');
+                    }
+                });
+            }
         });
-    });
     </script>
+
+    {% block scripts %}{% endblock %}
 </body>
+
 </html>

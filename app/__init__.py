@@ -7,6 +7,7 @@ from flask_login import LoginManager
 from config import Config
 from datetime import datetime
 from app.extensions import db, login_manager  # dbとlogin_managerをextensionsから取得
+from app.routes.revenue_plan_routes import revenue_plan_bp
 
 def format_number(value):
     """

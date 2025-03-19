@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}ダッシュボード | 事業計画システム{% endblock %}
+{% block title %}ダッシュボード | 経営管理システム{% endblock %}
 
 {% block page_title %}ダッシュボード{% endblock %}
 
@@ -16,140 +16,384 @@
 {% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <!-- 主要指標カード -->
-    <div id="salesCard" class="bg-blue-50 p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold text-blue-800 mb-4">売上高</h3>
-        <div class="flex items-end space-x-4">
-            <div class="text-3xl font-bold metric-value">¥0</div>
-            <div class="text-sm text-green-600">
-                <i class="fas fa-arrow-up mr-1"></i> 0%
-            </div>
+<div class="flex">
+    <!-- サイドバー -->
+    <div class="w-64 bg-white shadow-md h-screen">
+        <div class="p-4">
+            <nav class="space-y-4">
+                <!-- 認証・アカウント -->
+                <div class="space-y-2">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">認証・アカウント</h3>
+                    <div class="space-y-1">
+                        <a href="{{ url_for('auth.login') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                        </a>
+                        <a href="{{ url_for('auth.register') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-user-plus mr-2"></i>アカウント登録
+                        </a>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-key mr-2"></i>パスワード再設定
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 事業計画 -->
+                <div class="space-y-2">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">事業計画</h3>
+                    <div class="space-y-1">
+                        <a href="{{ url_for('business_plan.index') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-project-diagram mr-2"></i>事業計画概要
+                        </a>
+                        <a href="{{ url_for('business_plan.profit_loss') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-chart-bar mr-2"></i>損益計算書
+                        </a>
+                        <a href="{{ url_for('business_plan.cash_flow') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-money-bill-wave mr-2"></i>キャッシュフロー
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 収益計画 -->
+                <div class="space-y-2">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">収益計画</h3>
+                    <div class="space-y-1">
+                        <a href="{{ url_for('revenue_plan.index') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-chart-line mr-2"></i>収益計画メイン
+                        </a>
+                        <a href="{{ url_for('revenue_plan.business_settings') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-cog mr-2"></i>事業設定
+                        </a>
+                        <a href="{{ url_for('revenue_plan.revenue_input') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-edit mr-2"></i>売上計画入力
+                        </a>
+                        <a href="{{ url_for('revenue_plan.scenario_comparison') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-balance-scale mr-2"></i>シナリオ比較
+                        </a>
+                        <a href="{{ url_for('revenue_plan.import_export') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                            <i class="fas fa-file-import mr-2"></i>インポート/エクスポート
+                        </a>
+                    </div>
+                </div>
+            </nav>
         </div>
     </div>
-    
-    <div id="profitCard" class="bg-green-50 p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold text-green-800 mb-4">営業利益</h3>
-        <div class="flex items-end space-x-4">
-            <div class="text-3xl font-bold metric-value">¥0</div>
-            <div class="text-sm text-green-600">
-                <i class="fas fa-arrow-up mr-1"></i> 0%
+
+    <!-- メインコンテンツ -->
+    <div class="flex-1 p-8">
+        <!-- 日付・時刻・励ましの言葉 -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 日付 -->
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-gray-500">今日の日付</h3>
+                    <p class="text-xl font-bold text-gray-800" id="current-date"></p>
+                </div>
+                <!-- 時刻 -->
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-gray-500">現在時刻</h3>
+                    <p class="text-xl font-bold text-gray-800" id="current-time"></p>
+                </div>
+                <!-- 励ましの言葉 -->
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-gray-500">今日の励まし</h3>
+                    <p class="text-lg text-blue-600" id="motivation-message"></p>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="bg-yellow-50 p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold text-yellow-800 mb-4">当期純利益</h3>
-        <div class="flex items-end space-x-4">
-            <div class="text-3xl font-bold metric-value">¥0</div>
-            <div class="text-sm text-green-600">
-                <i class="fas fa-arrow-up mr-1"></i> 0%
+
+        <!-- KPI概要 - 3つのカードを横並びに -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <!-- 売上進捗 -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-md font-medium text-gray-700">売上進捗</h3>
+                    <span class="text-xs text-gray-500">2023年4月</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">計画</span>
+                        <span class="text-sm font-medium text-gray-800">¥12,500,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">実績</span>
+                        <span class="text-sm font-medium text-gray-800">¥9,750,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">進捗率</span>
+                        <span class="text-sm font-medium text-green-600">78%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: 78%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 利益進捗 -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-md font-medium text-gray-700">利益進捗</h3>
+                    <span class="text-xs text-gray-500">2023年4月</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">計画</span>
+                        <span class="text-sm font-medium text-gray-800">¥3,750,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">実績</span>
+                        <span class="text-sm font-medium text-gray-800">¥2,925,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">進捗率</span>
+                        <span class="text-sm font-medium text-blue-600">82%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: 82%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 資金残高 -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-md font-medium text-gray-700">資金残高</h3>
+                    <span class="text-xs text-gray-500">2023年4月</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">当月残高</span>
+                        <span class="text-sm font-medium text-gray-800">¥18,250,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">前月比</span>
+                        <span class="text-sm font-medium text-red-600">-¥1,200,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">増減率</span>
+                        <span class="text-sm font-medium text-red-600">-6.2%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-red-500 h-2 rounded-full" style="width: 93.8%"></div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div id="cashCard" class="bg-purple-50 p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold text-purple-800 mb-4">期末資金残高</h3>
-        <div class="flex items-end space-x-4">
-            <div class="text-3xl font-bold metric-value">¥0</div>
-            <div class="text-sm text-green-600">
-                <i class="fas fa-arrow-up mr-1"></i> 0%
+
+        <!-- メインコンテンツエリア -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左カラム -->
+            <div class="space-y-8">
+                <!-- 今日の業務相談 -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium text-gray-700 mb-4">今日の業務相談</h2>
+                    <div class="space-y-4">
+                        <div class="p-3 bg-yellow-50 rounded border border-yellow-200">
+                            <div class="flex justify-between mb-1">
+                                <h3 class="font-medium text-gray-800">月次決算資料の準備</h3>
+                                <span class="text-xs text-red-600 font-medium">期限: 2023-04-10</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <p class="text-sm text-gray-600">未着手</p>
+                                <button class="text-xs bg-yellow-500 text-white px-2 py-1 rounded">開始する</button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-yellow-50 rounded border border-yellow-200">
+                            <div class="flex justify-between mb-1">
+                                <h3 class="font-medium text-gray-800">銀行との融資面談</h3>
+                                <span class="text-xs text-red-600 font-medium">期限: 2023-04-15</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <p class="text-sm text-gray-600">未着手</p>
+                                <button class="text-xs bg-yellow-500 text-white px-2 py-1 rounded">開始する</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
+                        すべてのタスクを表示
+                    </button>
+                </div>
+
+                <!-- よく使うページ -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium text-gray-700 mb-4">よく使うページ</h2>
+                    <div class="space-y-3">
+                        <a href="#" class="flex items-center p-2 rounded hover:bg-gray-50 transition">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <span class="text-gray-700">収益計画</span>
+                                <p class="text-xs text-gray-500">売上計画の作成と管理</p>
+                            </div>
+                        </a>
+                        <a href="#" class="flex items-center p-2 rounded hover:bg-gray-50 transition">
+                            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div>
+                                <span class="text-gray-700">事業計画</span>
+                                <p class="text-xs text-gray-500">年度事業計画の確認</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中央カラム -->
+            <div class="space-y-8">
+                <!-- 月次売上推移 -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium text-gray-700 mb-4">月次売上推移</h2>
+                    <div class="h-64 bg-gray-100 rounded">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 費用内訳 -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium text-gray-700 mb-4">費用内訳</h2>
+                    <div class="h-64 bg-gray-100 rounded">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右カラム -->
+            <div class="space-y-8">
+                <!-- 経営戦略壁打ち -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium text-gray-700 mb-4">経営戦略壁打ち</h2>
+                    <div class="space-y-4">
+                        <div class="p-3 bg-indigo-50 rounded border border-indigo-200">
+                            <div class="flex justify-between mb-1">
+                                <h3 class="font-medium text-gray-800">新市場参入の検討</h3>
+                                <span class="text-xs text-gray-500">2023-04-02</span>
+                            </div>
+                            <p class="text-sm text-gray-600">競合分析と市場規模の調査が必要</p>
+                        </div>
+                        
+                        <div class="p-3 bg-green-50 rounded border border-green-200">
+                            <div class="flex justify-between mb-1">
+                                <h3 class="font-medium text-gray-800">コスト削減プラン</h3>
+                                <span class="text-xs text-gray-500">2023-04-01</span>
+                            </div>
+                            <p class="text-sm text-gray-600">固定費の見直しを行い、20%削減を目指す</p>
+                        </div>
+                    </div>
+                    <textarea class="mt-4 w-full p-3 border border-gray-300 rounded" rows="3" 
+                        placeholder="アイデアや課題について書いてみましょう..."></textarea>
+                    <button class="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                        アイデアを整理する
+                    </button>
+                </div>
+
+                <!-- レポート作成 -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium text-gray-700 mb-4">レポート作成</h2>
+                    <div class="space-y-3">
+                        <div class="p-3 rounded hover:bg-gray-50 transition border border-gray-200">
+                            <h3 class="font-medium text-gray-800">月次レポート</h3>
+                            <p class="text-sm text-gray-600">月次の業績レポートを生成します</p>
+                            <button class="mt-2 w-full px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
+                                作成する
+                            </button>
+                        </div>
+                        <div class="p-3 rounded hover:bg-gray-50 transition border border-gray-200">
+                            <h3 class="font-medium text-gray-800">部門別分析</h3>
+                            <p class="text-sm text-gray-600">部門ごとの収益性を分析します</p>
+                            <button class="mt-2 w-full px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
+                                作成する
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- グラフセクション -->
-<div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4 text-gray-700">月次推移</h3>
-    <div class="bg-white p-4 rounded-lg shadow-md">
-        <canvas id="revenueChart" height="300"></canvas>
-    </div>
-</div>
+<!-- Chart.jsのスクリプト -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 売上推移グラフ
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+            datasets: [{
+                label: '売上',
+                data: [1200, 1900, 1500, 2100, 1800, 2300],
+                borderColor: 'rgb(59, 130, 246)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
 
-<!-- テーブルセクション -->
-<div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4 text-gray-700">事業計画一覧</h3>
-    
-    {% if current_plans %}
-    <div class="mb-6">
-        <h4 class="text-lg font-medium mb-3 text-gray-600">単年事業計画</h4>
-        <div class="overflow-x-auto">
-            <table class="min-w-full border-collapse">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">計画名</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">会計年度</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">期間</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">作成日</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">アクション</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for plan in current_plans %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.name }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.fiscal_year }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.start_month }}月～{{ plan.end_month }}月</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.created_at.strftime('%Y/%m/%d') }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">
-                            <a href="{{ url_for('business_plan.current') }}" class="text-blue-600 hover:underline">表示</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
-    
-    {% if next_plans %}
-    <div>
-        <h4 class="text-lg font-medium mb-3 text-gray-600">来期事業計画</h4>
-        <div class="overflow-x-auto">
-            <table class="min-w-full border-collapse">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">計画名</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">会計年度</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">期間</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">作成日</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 tracking-wider border">アクション</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for plan in next_plans %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.name }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.fiscal_year }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.start_month }}月～{{ plan.end_month }}月</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">{{ plan.created_at.strftime('%Y/%m/%d') }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 border">
-                            <a href="{{ url_for('business_plan.next') }}" class="text-blue-600 hover:underline">表示</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
-    
-    {% if not current_plans and not next_plans %}
-    <div class="text-center py-8">
-        <p class="text-gray-500 mb-4">まだ事業計画が作成されていません。</p>
-        <div class="space-x-4">
-            <a href="{{ url_for('business_plan.current') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
-                単年事業計画を作成
-            </a>
-            <a href="{{ url_for('business_plan.next') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded">
-                来期事業計画を作成
-            </a>
-        </div>
-    </div>
-    {% endif %}
-</div>
-{% endblock %}
+    // 費用内訳グラフ
+    const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+    new Chart(expenseCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['人件費', '広告宣伝費', '家賃', 'その他'],
+            datasets: [{
+                data: [45, 25, 20, 10],
+                backgroundColor: [
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(249, 115, 22)',
+                    'rgb(107, 114, 128)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // 日付・時刻の更新
+    function updateDateTime() {
+        const now = new Date();
+        
+        // 日付のフォーマット
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        document.getElementById('current-date').textContent = now.toLocaleDateString('ja-JP', dateOptions);
+        
+        // 時刻のフォーマット
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        document.getElementById('current-time').textContent = now.toLocaleTimeString('ja-JP', timeOptions);
+    }
+
+    // 励ましのメッセージ
+    const motivationalMessages = [
+        "今日も一歩前進！",
+        "小さな進歩が大きな成功につながります",
+        "できることから始めましょう",
+        "今日という日を大切に",
+        "一緒に頑張りましょう！",
+        "あなたの努力は必ず実を結びます",
+        "今日が最高の1日になりますように"
+    ];
+
+    function setMotivationalMessage() {
+        const messageIndex = Math.floor(Math.random() * motivationalMessages.length);
+        document.getElementById('motivation-message').textContent = motivationalMessages[messageIndex];
+    }
+
+    // 初期化と定期更新
+    updateDateTime();
+    setMotivationalMessage();
+    setInterval(updateDateTime, 1000); // 1秒ごとに時刻を更新
+    setInterval(setMotivationalMessage, 3600000); // 1時間ごとに励ましの言葉を更新
+});
+</script>
 
 {% block scripts %}
 <script>
@@ -247,4 +491,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- ダッシュボード用JavaScript -->
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-{% endblock %} 
+{% endblock scripts %}
+
+{% endblock content %} 

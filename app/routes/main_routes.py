@@ -4,16 +4,15 @@ from flask_login import login_required, current_user
 from app.models.revenue_business import RevenueBusiness
 from app.models.sales_record import SalesRecord
 from datetime import datetime, timedelta
+import random
 
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
     """
-    トップページ
-    
-    ログイン済みの場合はダッシュボードへ、
-    未ログインの場合はログイン画面へリダイレクト
+    アプリケーションのトップページ
+    未ログインならログインページへ、ログイン済みならダッシュボードへリダイレクト
     """
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
@@ -28,66 +27,78 @@ def home():
 @login_required
 def dashboard():
     """
-    ダッシュボードページ
-    Apple風のモダンなデザインで各種データを表示
+    ダッシュボード画面
+    経営情報の概要、各種グラフ、タスク、メモなどを表示
     """
-    try:
-        # 収益事業モデルの取得
-        revenue_businesses = RevenueBusiness.query.filter_by(user_id=current_user.id).all()
-        
-        # 売上データの集計
-        monthly_sales = [0] * 12
-        total_monthly_sales = 0
-        revenue_composition = {}
-        
-        for business in revenue_businesses:
-            records = SalesRecord.query.filter_by(revenue_business_id=business.id).all()
-            business_total = sum(record.total_amount for record in records)
-            revenue_composition[business.name] = business_total
-            
-            for record in records:
-                month = record.month.month - 1
-                monthly_sales[month] += record.total_amount
-                if month == datetime.now().month - 1:
-                    total_monthly_sales += record.total_amount
-
-        # 前月比成長率の計算
-        current_month = datetime.now().month - 1
-        if current_month > 0 and monthly_sales[current_month - 1] > 0:
-            sales_growth = ((monthly_sales[current_month] - monthly_sales[current_month - 1]) / 
-                          monthly_sales[current_month - 1] * 100)
-        else:
-            sales_growth = 0
-
-        # 収益構成データの準備
-        revenue_composition_labels = list(revenue_composition.keys())
-        revenue_composition_data = list(revenue_composition.values())
-
-        # 目標達成率の計算（仮の目標値）
-        target_sales = 10000000  # 1000万円
-        achievement_rate = min(int((total_monthly_sales / target_sales) * 100), 100)
-
-        return render_template('main/dashboard.html',
-                            revenue_businesses=revenue_businesses,
-                            total_monthly_sales=total_monthly_sales,
-                            sales_growth=round(sales_growth, 1),
-                            monthly_sales=monthly_sales,
-                            achievement_rate=achievement_rate,
-                            revenue_composition_labels=revenue_composition_labels,
-                            revenue_composition_data=revenue_composition_data,
-                            recent_activities=get_recent_activities())
-                            
-    except Exception as e:
-        return render_template('main/dashboard.html',
-                            revenue_businesses=[],
-                            total_monthly_sales=0,
-                            sales_growth=0,
-                            monthly_sales=[0] * 12,
-                            achievement_rate=0,
-                            revenue_composition_labels=[],
-                            revenue_composition_data=[],
-                            recent_activities=[],
-                            error=str(e))
+    # 現在の日時を取得
+    current_datetime = datetime.now()
+    
+    # 元気が出るようなランダムメッセージ
+    motivational_messages = [
+        "今日も最高の一日にしましょう！",
+        "小さな一歩が大きな変化を生みます",
+        "計画があれば、未来は明るい",
+        "データに基づく意思決定が成功への鍵です",
+        "今日の努力が明日の成果につながります",
+        "課題を見つけるのは簡単、解決策を見つけるのが経営者の仕事です",
+        "常に顧客視点で考えましょう",
+        "正しい質問が正しい答えを導きます"
+    ]
+    
+    # ランダムなメッセージを選択
+    random_message = random.choice(motivational_messages)
+    
+    # ダミーデータ - 実際はDBからデータを取得
+    progress_data = {
+        'sales': {'plan': 1000000, 'actual': 850000, 'progress_rate': 85},
+        'profit': {'plan': 300000, 'actual': 280000, 'progress_rate': 93},
+        'cash': {'balance': 5200000, 'previous_month': 4800000, 'change_rate': 8.3}
+    }
+    
+    # クイックリンクの定義
+    quick_links = [
+        {
+            'name': '収益計画',
+            'description': '売上計画の作成と管理',
+            'url': url_for('revenue_plan.index'),
+            'icon': 'chart-line'
+        },
+        {
+            'name': '事業計画',
+            'description': '年度事業計画の確認',
+            'url': url_for('main.dashboard'),  # 適切なURLに変更してください
+            'icon': 'file-alt'
+        },
+        {
+            'name': '実績入力',
+            'description': '月次実績の入力',
+            'url': '#',  # 適切なURLに変更してください
+            'icon': 'keyboard'
+        }
+    ]
+    
+    # タスクリスト
+    tasks = [
+        {'id': 1, 'title': '月次決算資料の準備', 'deadline': '2023-04-10', 'status': 'pending'},
+        {'id': 2, 'title': '銀行との融資面談', 'deadline': '2023-04-15', 'status': 'pending'},
+        {'id': 3, 'title': '新規事業計画の見直し', 'deadline': '2023-04-20', 'status': 'in_progress'}
+    ]
+    
+    # 戦略メモ
+    strategy_notes = [
+        {'id': 1, 'title': '新市場参入の検討', 'content': '競合分析と市場規模の調査が必要', 'created_at': '2023-04-02'},
+        {'id': 2, 'title': 'コスト削減プラン', 'content': '固定費の見直しを行い、20%削減を目指す', 'created_at': '2023-04-01'}
+    ]
+    
+    return render_template(
+        'dashboard.html',
+        current_datetime=current_datetime,
+        random_message=random_message,
+        progress_data=progress_data,
+        quick_links=quick_links,
+        tasks=tasks,
+        strategy_notes=strategy_notes
+    )
 
 def get_recent_activities():
     """最近の活動を取得"""

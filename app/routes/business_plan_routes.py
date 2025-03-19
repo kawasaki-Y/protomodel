@@ -756,4 +756,16 @@ def edit():
         # 編集機能の実装（後で実装）
         return redirect(url_for('business_plan.index'))
     
-    return render_template('business_plan/edit.html') 
+    return render_template('business_plan/edit.html')
+
+@business_plan_bp.route('/profit-loss')
+@login_required
+def profit_loss():
+    """損益計算書ページを表示します"""
+    return render_template('business_plan/profit_loss.html')
+
+@business_plan_bp.route('/cash-flow')
+@login_required
+def cash_flow():
+    """キャッシュフロー計画ページを表示します"""
+    return render_template('business_plan/cash_flow.html') 
