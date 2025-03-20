@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">設定</h1>
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="space-y-6">
+            <!-- プロフィール設定 -->
+            <div class="border-b pb-4">
+                <h2 class="text-lg font-medium mb-2">プロフィール設定</h2>
+                <p class="text-gray-600 mb-2">ユーザー情報の編集</p>
+                <a href="{{ url_for('settings.profile') }}" 
+                   class="text-blue-600 hover:text-blue-800">
+                    編集する →
+                </a>
+            </div>
+            
+            <!-- セキュリティ設定 -->
+            <div class="border-b pb-4">
+                <h2 class="text-lg font-medium mb-2">セキュリティ設定</h2>
+                <p class="text-gray-600 mb-2">パスワードの変更など</p>
+                <a href="{{ url_for('settings.security') }}" 
+                   class="text-blue-600 hover:text-blue-800">
+                    設定する →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

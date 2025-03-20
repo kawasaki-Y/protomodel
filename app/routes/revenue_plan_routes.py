@@ -7,34 +7,34 @@ from datetime import datetime
 import calendar
 import json
 
-revenue_plan_bp = Blueprint('revenue_plan', __name__, url_prefix='/revenue-plan')
+bp = Blueprint('revenue_plan', __name__, url_prefix='/revenue-plan')
 
-@revenue_plan_bp.route('/')
+@bp.route('/')
 @login_required
 def index():
     """収益計画のメインページ"""
     return render_template('revenue_plan/index.html')
 
-@revenue_plan_bp.route('/business-settings', methods=['GET'])
+@bp.route('/business-settings')
 @login_required
 def business_settings():
     """事業設定タブ"""
     return render_template('revenue_plan/business_settings.html')
 
-@revenue_plan_bp.route('/revenue-input', methods=['GET'])
+@bp.route('/revenue-input')
 @login_required
 def revenue_input():
     """売上計画入力タブ"""
     return render_template('revenue_plan/revenue_input.html')
 
-@revenue_plan_bp.route('/business')
+@bp.route('/business')
 @login_required
 def business_tab():
     """事業設定タブ"""
     businesses = Business.query.filter_by(user_id=current_user.id).all()
     return render_template('revenue_plan/business_tab.html', businesses=businesses)
 
-@revenue_plan_bp.route('/planning')
+@bp.route('/planning')
 @login_required
 def planning_tab():
     """売上計画入力タブ"""
@@ -102,7 +102,7 @@ def planning_tab():
         scenario=scenario
     )
 
-@revenue_plan_bp.route('/api/revenue-plan/business-settings', methods=['POST'])
+@bp.route('/api/revenue-plan/business-settings', methods=['POST'])
 @login_required
 def update_business_settings():
     """事業設定の更新API"""
@@ -113,7 +113,7 @@ def update_business_settings():
     # データ処理ロジックをここに追加
     return jsonify({"status": "success"})
 
-@revenue_plan_bp.route('/api/business', methods=['POST'])
+@bp.route('/api/business', methods=['POST'])
 @login_required
 def create_business():
     """事業を新規追加"""
@@ -139,7 +139,7 @@ def create_business():
         }
     })
 
-@revenue_plan_bp.route('/api/business/<int:business_id>', methods=['PUT'])
+@bp.route('/api/business/<int:business_id>', methods=['PUT'])
 @login_required
 def update_business(business_id):
     """事業情報を更新"""
@@ -160,7 +160,7 @@ def update_business(business_id):
         }
     })
 
-@revenue_plan_bp.route('/api/business/<int:business_id>', methods=['DELETE'])
+@bp.route('/api/business/<int:business_id>', methods=['DELETE'])
 @login_required
 def delete_business(business_id):
     """事業を削除"""
@@ -171,7 +171,7 @@ def delete_business(business_id):
     
     return jsonify({'success': True})
 
-@revenue_plan_bp.route('/api/business/<int:business_id>/product', methods=['POST'])
+@bp.route('/api/business/<int:business_id>/product', methods=['POST'])
 @login_required
 def create_product(business_id):
     """商品を新規追加"""
@@ -199,7 +199,7 @@ def create_product(business_id):
         }
     })
 
-@revenue_plan_bp.route('/api/product/<int:product_id>', methods=['PUT', 'DELETE'])
+@bp.route('/api/product/<int:product_id>', methods=['PUT', 'DELETE'])
 @login_required
 def manage_product(product_id):
     """商品の更新・削除"""
@@ -231,7 +231,7 @@ def manage_product(product_id):
         }
     })
 
-@revenue_plan_bp.route('/api/business/<int:business_id>/market', methods=['POST'])
+@bp.route('/api/business/<int:business_id>/market', methods=['POST'])
 @login_required
 def create_market(business_id):
     """顧客・市場を新規追加"""
@@ -255,7 +255,7 @@ def create_market(business_id):
         }
     })
 
-@revenue_plan_bp.route('/api/market/<int:market_id>', methods=['PUT', 'DELETE'])
+@bp.route('/api/market/<int:market_id>', methods=['PUT', 'DELETE'])
 @login_required
 def manage_market(market_id):
     """顧客・市場の更新・削除"""
@@ -284,7 +284,7 @@ def manage_market(market_id):
         }
     })
 
-@revenue_plan_bp.route('/api/revenue', methods=['POST'])
+@bp.route('/api/revenue', methods=['POST'])
 @login_required
 def save_revenue_detail():
     """売上詳細データの保存"""
@@ -340,7 +340,7 @@ def save_revenue_detail():
         }
     })
 
-@revenue_plan_bp.route('/api/plan-summary/<int:fiscal_year>/<string:scenario>')
+@bp.route('/api/plan-summary/<int:fiscal_year>/<string:scenario>')
 @login_required
 def get_plan_summary(fiscal_year, scenario):
     """売上計画の年間サマリーを取得"""
@@ -380,13 +380,13 @@ def get_plan_summary(fiscal_year, scenario):
         'monthly_totals': monthly_totals
     })
 
-@revenue_plan_bp.route('/scenario-comparison')
+@bp.route('/scenario-comparison')
 @login_required
 def scenario_comparison():
     """シナリオ比較ページを表示します"""
     return render_template('revenue_plan/scenario_comparison.html')
 
-@revenue_plan_bp.route('/import-export')
+@bp.route('/import-export')
 @login_required
 def import_export():
     """データのインポート/エクスポートページを表示します"""

@@ -6,8 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
 from datetime import datetime
-from app.extensions import db, login_manager  # dbとlogin_managerをextensionsから取得
-from app.routes.revenue_plan_routes import revenue_plan_bp
+from app.extensions import db, login_manager
+import os
 
 def format_number(value):
     """
@@ -48,23 +48,40 @@ def create_app():
     app = Flask(__name__)
     
     # 設定の読み込み
-    app.config.from_object('config.Config')
+    app.config.update(
+        SECRET_KEY='your-secret-key',
+        SQLALCHEMY_DATABASE_URI='sqlite:///app.db',
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        DEBUG=True
+    )
     
     # 拡張機能の初期化
     db.init_app(app)
-    login_manager = LoginManager()
+    
+    with app.app_context():
+        # データベースのテーブルを作成
+        db.create_all()
+    
+    # LoginManagerの設定
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'ログインが必要です。'
+    
+    # user_loaderの設定
+    @login_manager.user_loader
+    def load_user(user_id):
+        from app.models.user import User
+        return User.query.get(int(user_id))
     
     # Blueprintの登録
-    from .routes import main_routes, auth_routes
+    from .routes import main_routes, auth_routes, revenue_plan_routes, settings_routes
     app.register_blueprint(main_routes.bp)
     app.register_blueprint(auth_routes.bp)
+    app.register_blueprint(revenue_plan_routes.bp)
+    app.register_blueprint(settings_routes.bp)
     
-    return app
-
-# ユーザーローダーの設定
-@login_manager.user_loader
-def load_user(user_id):
-    from app.models.user import User
-    return User.query.get(int(user_id)) 
+    # テンプレートフィルターの登録
+    app.jinja_env.filters['format_number'] = format_number
+    app.jinja_env.filters['format_datetime'] = format_datetime
+    
+    return app 

@@ -2,45 +2,10 @@
 {% block title %}収益計画 - 事業計画システム{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-6">
-  <h1 class="text-2xl font-bold mb-6">収益計画</h1>
-
-  <div class="bg-white rounded-lg shadow-md p-6">
-    <h2 class="text-xl font-semibold mb-4">収益事業モデル一覧</h2>
-
-    {% if businesses %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {% for business in businesses %}
-      <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-        <div class="bg-gray-50 p-4 border-b">
-          <h3 class="font-medium">{{ business.name }}</h3>
-          <div class="text-xs text-gray-500 mt-1">
-            <span class="inline-block bg-blue-100 text-blue-600 px-2 py-1 rounded mr-1">{{ business.model_type }}</span>
-          </div>
-        </div>
-        <div class="p-4">
-          <p class="text-sm text-gray-600 mb-4">
-            {{ business.description or '説明なし' }}
-          </p>
-          <div class="text-right">
-            <a href="{{ url_for('revenue_plan.entry', business_id=business.id) }}"
-              class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">
-              売上データ入力
-            </a>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">収益計画</h1>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p>収益計画の内容をここに表示します。</p>
     </div>
-    {% else %}
-    <div class="text-center py-8">
-      <p class="text-gray-500 mb-4">収益事業モデルがありません</p>
-      <a href="{{ url_for('revenue_model.create') }}"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        収益モデルを作成
-      </a>
-    </div>
-    {% endif %}
-  </div>
 </div>
 {% endblock %}

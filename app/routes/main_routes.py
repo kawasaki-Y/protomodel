@@ -6,9 +6,10 @@ from app.models.sales_record import SalesRecord
 from datetime import datetime, timedelta
 import random
 
-main_bp = Blueprint('main', __name__)
+# Blueprintの定義
+bp = Blueprint('main', __name__)
 
-@main_bp.route('/')
+@bp.route('/')
 def index():
     """
     アプリケーションのトップページ
@@ -18,12 +19,12 @@ def index():
         return redirect(url_for('main.dashboard'))
     return redirect(url_for('auth.login'))
 
-@main_bp.route('/home')
+@bp.route('/home')
 def home():
     """ホーム画面（未ログイン時のランディングページ）"""
     return render_template('index.html')
 
-@main_bp.route('/dashboard')
+@bp.route('/dashboard')
 @login_required
 def dashboard():
     """
@@ -109,7 +110,7 @@ def get_recent_activities():
         {'description': '事業計画を更新しました', 'created_at': datetime.now() - timedelta(days=2)},
     ]
 
-@main_bp.route('/settings')
+@bp.route('/settings')
 @login_required
 def settings():
     """
@@ -119,7 +120,7 @@ def settings():
     """
     return render_template('main/settings.html')
 
-@main_bp.route('/api/dashboard/chart-data')
+@bp.route('/api/dashboard/chart-data')
 @login_required
 def get_dashboard_chart_data():
     """

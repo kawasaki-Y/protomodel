@@ -146,6 +146,22 @@
           <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">税区分設定</a></li>
         </ul>
       </li>
+
+      <!-- 収益計画のリンク -->
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">収益計画</h3>
+        <div class="sidebar-links">
+          <a href="{{ url_for('revenue_plan.index') }}" class="sidebar-link">
+            収益計画メイン
+          </a>
+          <a href="{{ url_for('revenue_plan.business_settings') }}" class="sidebar-link">
+            事業設定
+          </a>
+          <a href="{{ url_for('revenue_plan.revenue_input') }}" class="sidebar-link">
+            売上計画入力
+          </a>
+        </div>
+      </div>
     </ul>
   </nav>
 </div>

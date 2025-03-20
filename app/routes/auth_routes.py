@@ -5,9 +5,11 @@ from app.models.user import User
 from functools import wraps
 import secrets
 from datetime import datetime, timedelta
+from app.forms.auth_forms import LoginForm, RegistrationForm
+from werkzeug.urls import url_parse
 
-# 認証関連の機能をまとめたBlueprint
-auth_bp = Blueprint('auth', __name__)
+# Blueprintの定義
+bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 # ==========================================================
 # 権限管理用のデコレータ
@@ -30,7 +32,7 @@ def admin_required(f):
 
 # トップページのルーティング
 # ログイン済みならnumerical_plan.indexへ、未ログインならログイン画面へ
-@auth_bp.route('/')
+@bp.route('/')
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
@@ -38,43 +40,33 @@ def index():
 
 # ログイン機能
 # POSTの場合はログイン処理、GETの場合はログイン画面表示
-@auth_bp.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    ログイン処理
-    
-    GET: ログインフォームの表示
-    POST: ユーザー認証と処理
-    """
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
+    form = LoginForm()
+    if form.validate_on_submit():
+        # デバッグ用のログ出力
+        print(f"Login attempt with email: {form.email.data}")
         
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):
+            login_user(user)
+            print(f"Login successful for user: {user.email}")  # デバッグ用
+            return redirect(url_for('main.dashboard'))
         
-        if user is None or not user.check_password(password):
-            flash('メールアドレスまたはパスワードが正しくありません', 'error')
-            return redirect(url_for('auth.login'))
-        
-        # ログイン成功
-        login_user(user)
-        next_page = request.args.get('next')
-        if not next_page or url_parse(next_page).netloc != '':
-            next_page = url_for('main.dashboard')
-        
-        return redirect(next_page)
+        flash('メールアドレスまたはパスワードが正しくありません', 'error')
+        print("Login failed")  # デバッグ用
     
-    return render_template('auth/login.html')
+    return render_template('auth/login.html', form=form)
 
 # ==========================================================
 # アカウント管理機能
 # ==========================================================
 
 # 新規アカウント作成（サインアップ）
-@auth_bp.route('/signup', methods=['GET', 'POST'])
+@bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     """
     新規ユーザー登録
@@ -114,53 +106,44 @@ def signup():
             
     return render_template('auth/signup.html')
 
-@auth_bp.route('/logout')
+@bp.route('/logout')
 @login_required
 def logout():
     """ログアウト処理"""
     logout_user()
-    return redirect(url_for('main.index'))
+    return redirect(url_for('auth.login'))
 
-@auth_bp.route('/register', methods=['GET', 'POST'])
+@bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """ユーザー登録画面と処理"""
-    # すでにログインしている場合はダッシュボードにリダイレクト
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
-    # POST処理（ユーザー登録処理）
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        password_confirm = request.form.get('password_confirm')
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        # メールアドレスの重複チェック
+        if User.query.filter_by(email=form.email.data).first():
+            flash('このメールアドレスは既に登録されています', 'error')
+            return render_template('auth/register.html', form=form)
         
-        # ユーザー名かEメールがすでに使われていないか確認
-        existing_user = User.query.filter(
-            (User.username == username) | (User.email == email)
-        ).first()
+        user = User(
+            username=form.username.data,
+            email=form.email.data
+        )
+        user.set_password(form.password.data)
         
-        if existing_user:
-            flash('そのユーザー名またはメールアドレスはすでに使用されています', 'danger')
-        elif password != password_confirm:
-            flash('パスワードが一致しません', 'danger')
-        else:
-            # 新規ユーザー作成
-            new_user = User(username=username, email=email)
-            new_user.set_password(password)
-            
-            # データベースに保存
-            db.session.add(new_user)
+        try:
+            db.session.add(user)
             db.session.commit()
-            
-            # 登録後、自動ログイン
-            login_user(new_user)
-            flash('アカウントが作成されました！', 'success')
-            return redirect(url_for('main.dashboard'))
+            flash('アカウントが作成されました。ログインしてください。', 'success')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            print(f"Registration error: {e}")  # デバッグ用
+            db.session.rollback()
+            flash('アカウントの作成に失敗しました。', 'error')
     
-    return render_template('auth/register.html')
+    return render_template('auth/register.html', form=form)
 
-@auth_bp.route('/profile', methods=['GET', 'POST'])
+@bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     """ユーザープロフィール画面と編集"""
@@ -190,7 +173,7 @@ def profile():
     
     return render_template('auth/profile.html')
 
-@auth_bp.route('/admin/users')
+@bp.route('/admin/users')
 @login_required
 @admin_required
 def manage_users():
@@ -198,7 +181,7 @@ def manage_users():
     users = User.query.all()
     return render_template('auth/manage_users.html', users=users)
 
-@auth_bp.route('/admin/users/<int:user_id>', methods=['GET', 'POST'])
+@bp.route('/admin/users/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_user(user_id):
@@ -234,7 +217,7 @@ def edit_user(user_id):
     
     return render_template('auth/edit_user.html', user=user)
 
-@auth_bp.route('/admin/users/new', methods=['GET', 'POST'])
+@bp.route('/admin/users/new', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def create_user():
@@ -278,7 +261,7 @@ def create_user():
     
     return render_template('auth/create_user.html')
 
-@auth_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required
 @admin_required
 def delete_user(user_id):
@@ -311,12 +294,12 @@ class PasswordReset(db.Model):
         return datetime.utcnow() <= expiration
 
 # パスワードリセットのルート
-@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+@bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     """パスワード再設定ページを表示します"""
     return render_template('auth/forgot_password.html')
 
-@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+@bp.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
@@ -348,4 +331,20 @@ def reset_password(token):
         else:
             flash('エラーが発生しました', 'error')
     
-    return render_template('auth/reset_password.html') 
+    return render_template('auth/reset_password.html')
+
+@bp.route('/debug/users')
+def debug_users():
+    if not app.debug:
+        return "Debug mode is disabled", 403
+        
+    users = User.query.all()
+    result = []
+    for user in users:
+        result.append({
+            'id': user.id,
+            'email': user.email,
+            'username': user.username,
+            'has_password': bool(user.password_hash)
+        })
+    return str(result) 

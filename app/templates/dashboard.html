@@ -20,463 +20,533 @@
     <!-- サイドバー -->
     <div class="w-64 bg-white shadow-md h-screen">
         <div class="p-4">
-            <nav class="space-y-4">
-                <!-- 認証・アカウント -->
-                <div class="space-y-2">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">認証・アカウント</h3>
-                    <div class="space-y-1">
-                        <a href="{{ url_for('auth.login') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                        </a>
-                        <a href="{{ url_for('auth.register') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-user-plus mr-2"></i>アカウント登録
-                        </a>
-                        <a href="{{ url_for('auth.forgot_password') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-key mr-2"></i>パスワード再設定
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 事業計画 -->
-                <div class="space-y-2">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">事業計画</h3>
-                    <div class="space-y-1">
-                        <a href="{{ url_for('business_plan.index') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-project-diagram mr-2"></i>事業計画概要
-                        </a>
-                        <a href="{{ url_for('business_plan.profit_loss') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-chart-bar mr-2"></i>損益計算書
-                        </a>
-                        <a href="{{ url_for('business_plan.cash_flow') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-money-bill-wave mr-2"></i>キャッシュフロー
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 収益計画 -->
-                <div class="space-y-2">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">収益計画</h3>
-                    <div class="space-y-1">
-                        <a href="{{ url_for('revenue_plan.index') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-chart-line mr-2"></i>収益計画メイン
-                        </a>
-                        <a href="{{ url_for('revenue_plan.business_settings') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-cog mr-2"></i>事業設定
-                        </a>
-                        <a href="{{ url_for('revenue_plan.revenue_input') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-edit mr-2"></i>売上計画入力
-                        </a>
-                        <a href="{{ url_for('revenue_plan.scenario_comparison') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-balance-scale mr-2"></i>シナリオ比較
-                        </a>
-                        <a href="{{ url_for('revenue_plan.import_export') }}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                            <i class="fas fa-file-import mr-2"></i>インポート/エクスポート
-                        </a>
-                    </div>
-                </div>
-            </nav>
+            <h3 class="font-bold text-lg mb-4">メニュー</h3>
+            <ul class="space-y-2">
+                <li>
+                    <a href="{{ url_for('main.dashboard') }}" class="block py-2 px-4 bg-blue-100 text-blue-700 rounded font-medium">
+                        <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
+                        <i class="fas fa-project-diagram mr-2"></i>事業計画
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
+                        <i class="fas fa-chart-line mr-2"></i>収益計画
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
+                        <i class="fas fa-tasks mr-2"></i>タスク管理
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
+                        <i class="fas fa-file-alt mr-2"></i>レポート
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
+                        <i class="fas fa-cog mr-2"></i>設定
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 
     <!-- メインコンテンツ -->
-    <div class="flex-1 p-8">
+    <div class="flex-1 p-8 overflow-y-auto">
         <!-- 日付・時刻・励ましの言葉 -->
         <div class="bg-white rounded-lg shadow p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- 日付 -->
-                <div class="text-center">
-                    <h3 class="text-sm font-medium text-gray-500">今日の日付</h3>
-                    <p class="text-xl font-bold text-gray-800" id="current-date"></p>
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 id="current-date" class="text-2xl font-bold text-gray-800"></h2>
+                    <p id="current-time" class="text-xl text-gray-600"></p>
                 </div>
-                <!-- 時刻 -->
-                <div class="text-center">
-                    <h3 class="text-sm font-medium text-gray-500">現在時刻</h3>
-                    <p class="text-xl font-bold text-gray-800" id="current-time"></p>
-                </div>
-                <!-- 励ましの言葉 -->
-                <div class="text-center">
-                    <h3 class="text-sm font-medium text-gray-500">今日の励まし</h3>
-                    <p class="text-lg text-blue-600" id="motivation-message"></p>
+                <div>
+                    <p id="encouragement-message" class="text-lg text-blue-600 italic"></p>
                 </div>
             </div>
         </div>
 
-        <!-- KPI概要 - 3つのカードを横並びに -->
+        <!-- KPI概要 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <!-- 売上進捗 -->
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-md font-medium text-gray-700">売上進捗</h3>
-                    <span class="text-xs text-gray-500">2023年4月</span>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-2">売上進捗</h3>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-600">計画</span>
+                    <span class="font-bold">¥10,000,000</span>
                 </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">計画</span>
-                        <span class="text-sm font-medium text-gray-800">¥12,500,000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">実績</span>
-                        <span class="text-sm font-medium text-gray-800">¥9,750,000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">進捗率</span>
-                        <span class="text-sm font-medium text-green-600">78%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-green-500 h-2 rounded-full" style="width: 78%"></div>
-                    </div>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-600">実績</span>
+                    <span class="font-bold">¥8,500,000</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 85%"></div>
+                </div>
+                <div class="flex justify-end mt-2">
+                    <span class="text-blue-600 font-bold">85%</span>
                 </div>
             </div>
             
             <!-- 利益進捗 -->
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-md font-medium text-gray-700">利益進捗</h3>
-                    <span class="text-xs text-gray-500">2023年4月</span>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-2">利益進捗</h3>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-600">計画</span>
+                    <span class="font-bold">¥3,000,000</span>
                 </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">計画</span>
-                        <span class="text-sm font-medium text-gray-800">¥3,750,000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">実績</span>
-                        <span class="text-sm font-medium text-gray-800">¥2,925,000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">進捗率</span>
-                        <span class="text-sm font-medium text-blue-600">82%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-blue-500 h-2 rounded-full" style="width: 82%"></div>
-                    </div>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-600">実績</span>
+                    <span class="font-bold">¥2,400,000</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-green-600 h-2.5 rounded-full" style="width: 80%"></div>
+                </div>
+                <div class="flex justify-end mt-2">
+                    <span class="text-green-600 font-bold">80%</span>
                 </div>
             </div>
             
             <!-- 資金残高 -->
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-md font-medium text-gray-700">資金残高</h3>
-                    <span class="text-xs text-gray-500">2023年4月</span>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-2">資金残高</h3>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-600">当月残高</span>
+                    <span class="font-bold">¥15,500,000</span>
                 </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">当月残高</span>
-                        <span class="text-sm font-medium text-gray-800">¥18,250,000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">前月比</span>
-                        <span class="text-sm font-medium text-red-600">-¥1,200,000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">増減率</span>
-                        <span class="text-sm font-medium text-red-600">-6.2%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-red-500 h-2 rounded-full" style="width: 93.8%"></div>
-                    </div>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-600">前月比</span>
+                    <span class="font-bold text-green-600">+¥1,200,000</span>
+                </div>
+                <div class="text-xs text-gray-500 mt-4">
+                    <p>次回支払予定: 2025年4月5日</p>
+                    <p>予定金額: ¥2,300,000</p>
                 </div>
             </div>
         </div>
 
         <!-- メインコンテンツエリア -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- 左カラム -->
+            <!-- 左カラム: 今日の業務相談、よく使うページ -->
             <div class="space-y-8">
-                <!-- 今日の業務相談 -->
+                <!-- 今日の業務相談（タスク管理） -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-medium text-gray-700 mb-4">今日の業務相談</h2>
-                    <div class="space-y-4">
-                        <div class="p-3 bg-yellow-50 rounded border border-yellow-200">
-                            <div class="flex justify-between mb-1">
-                                <h3 class="font-medium text-gray-800">月次決算資料の準備</h3>
-                                <span class="text-xs text-red-600 font-medium">期限: 2023-04-10</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <p class="text-sm text-gray-600">未着手</p>
-                                <button class="text-xs bg-yellow-500 text-white px-2 py-1 rounded">開始する</button>
-                            </div>
-                        </div>
-                        
-                        <div class="p-3 bg-yellow-50 rounded border border-yellow-200">
-                            <div class="flex justify-between mb-1">
-                                <h3 class="font-medium text-gray-800">銀行との融資面談</h3>
-                                <span class="text-xs text-red-600 font-medium">期限: 2023-04-15</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <p class="text-sm text-gray-600">未着手</p>
-                                <button class="text-xs bg-yellow-500 text-white px-2 py-1 rounded">開始する</button>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
-                        すべてのタスクを表示
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">今日の業務相談</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
+                            <span class="flex-1">営業会議の準備資料作成</span>
+                            <span class="text-red-500 text-sm">今日まで</span>
+                        </li>
+                        <li class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
+                            <span class="flex-1">月次報告書の作成</span>
+                            <span class="text-orange-500 text-sm">明日まで</span>
+                        </li>
+                        <li class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
+                            <span class="flex-1">新規顧客へのフォローアップ</span>
+                            <span class="text-gray-500 text-sm">3/25まで</span>
+                        </li>
+                        <li class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
+                            <span class="flex-1">プロジェクト計画の見直し</span>
+                            <span class="text-gray-500 text-sm">3/28まで</span>
+                        </li>
+                    </ul>
+                    <button class="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                        <i class="fas fa-plus mr-1"></i> タスクを追加
                     </button>
                 </div>
-
+                
                 <!-- よく使うページ -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-medium text-gray-700 mb-4">よく使うページ</h2>
-                    <div class="space-y-3">
-                        <a href="#" class="flex items-center p-2 rounded hover:bg-gray-50 transition">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                            <div>
-                                <span class="text-gray-700">収益計画</span>
-                                <p class="text-xs text-gray-500">売上計画の作成と管理</p>
-                            </div>
-                        </a>
-                        <a href="#" class="flex items-center p-2 rounded hover:bg-gray-50 transition">
-                            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <div>
-                                <span class="text-gray-700">事業計画</span>
-                                <p class="text-xs text-gray-500">年度事業計画の確認</p>
-                            </div>
-                        </a>
-                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">よく使うページ</h3>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
+                                <i class="fas fa-chart-bar text-blue-500 mr-2"></i>
+                                <span>月次レポート</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
+                                <i class="fas fa-money-bill-wave text-green-500 mr-2"></i>
+                                <span>キャッシュフロー</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
+                                <i class="fas fa-users text-purple-500 mr-2"></i>
+                                <span>顧客リスト</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
+                                <i class="fas fa-project-diagram text-orange-500 mr-2"></i>
+                                <span>プロジェクトタイムライン</span>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
-
-            <!-- 中央カラム -->
+            
+            <!-- 中央カラム: 月次売上推移、費用内訳 -->
             <div class="space-y-8">
                 <!-- 月次売上推移 -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-medium text-gray-700 mb-4">月次売上推移</h2>
-                    <div class="h-64 bg-gray-100 rounded">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">月次売上推移</h3>
+                    <div class="h-64">
                         <canvas id="revenueChart"></canvas>
                     </div>
                 </div>
-
+                
                 <!-- 費用内訳 -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-medium text-gray-700 mb-4">費用内訳</h2>
-                    <div class="h-64 bg-gray-100 rounded">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">費用内訳</h3>
+                    <div class="h-64">
                         <canvas id="expenseChart"></canvas>
                     </div>
                 </div>
             </div>
-
-            <!-- 右カラム -->
+            
+            <!-- 右カラム: 経営戦略壁打ち、レポート作成 -->
             <div class="space-y-8">
                 <!-- 経営戦略壁打ち -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-medium text-gray-700 mb-4">経営戦略壁打ち</h2>
-                    <div class="space-y-4">
-                        <div class="p-3 bg-indigo-50 rounded border border-indigo-200">
-                            <div class="flex justify-between mb-1">
-                                <h3 class="font-medium text-gray-800">新市場参入の検討</h3>
-                                <span class="text-xs text-gray-500">2023-04-02</span>
-                            </div>
-                            <p class="text-sm text-gray-600">競合分析と市場規模の調査が必要</p>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">経営戦略壁打ち</h3>
+                    <div class="space-y-3">
+                        <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
+                            <p class="text-gray-700">新規事業展開について営業部と製品開発部で協議する</p>
+                            <p class="text-xs text-gray-500 mt-1">2025/3/15 追加</p>
                         </div>
-                        
-                        <div class="p-3 bg-green-50 rounded border border-green-200">
-                            <div class="flex justify-between mb-1">
-                                <h3 class="font-medium text-gray-800">コスト削減プラン</h3>
-                                <span class="text-xs text-gray-500">2023-04-01</span>
-                            </div>
-                            <p class="text-sm text-gray-600">固定費の見直しを行い、20%削減を目指す</p>
+                        <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
+                            <p class="text-gray-700">Q2からの価格戦略の見直しが必要</p>
+                            <p class="text-xs text-gray-500 mt-1">2025/3/12 追加</p>
                         </div>
                     </div>
-                    <textarea class="mt-4 w-full p-3 border border-gray-300 rounded" rows="3" 
-                        placeholder="アイデアや課題について書いてみましょう..."></textarea>
-                    <button class="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-                        アイデアを整理する
-                    </button>
+                    <div class="mt-4">
+                        <textarea class="w-full border border-gray-300 rounded p-2" rows="2" placeholder="新しいメモを追加..."></textarea>
+                        <button class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">保存</button>
+                    </div>
                 </div>
-
+                
                 <!-- レポート作成 -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-medium text-gray-700 mb-4">レポート作成</h2>
-                    <div class="space-y-3">
-                        <div class="p-3 rounded hover:bg-gray-50 transition border border-gray-200">
-                            <h3 class="font-medium text-gray-800">月次レポート</h3>
-                            <p class="text-sm text-gray-600">月次の業績レポートを生成します</p>
-                            <button class="mt-2 w-full px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
-                                作成する
-                            </button>
-                        </div>
-                        <div class="p-3 rounded hover:bg-gray-50 transition border border-gray-200">
-                            <h3 class="font-medium text-gray-800">部門別分析</h3>
-                            <p class="text-sm text-gray-600">部門ごとの収益性を分析します</p>
-                            <button class="mt-2 w-full px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
-                                作成する
-                            </button>
-                        </div>
-                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">レポート作成</h3>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-alt text-blue-500 mr-2"></i>
+                                    <span>月次レポート</span>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-alt text-green-500 mr-2"></i>
+                                    <span>四半期レポート</span>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-alt text-purple-500 mr-2"></i>
+                                    <span>営業活動レポート</span>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-alt text-orange-500 mr-2"></i>
+                                    <span>カスタムレポート</span>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Chart.jsのスクリプト -->
+{% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 売上推移グラフ
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(revenueCtx, {
-        type: 'line',
-        data: {
-            labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-            datasets: [{
-                label: '売上',
-                data: [1200, 1900, 1500, 2100, 1800, 2300],
-                borderColor: 'rgb(59, 130, 246)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-
-    // 費用内訳グラフ
-    const expenseCtx = document.getElementById('expenseChart').getContext('2d');
-    new Chart(expenseCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['人件費', '広告宣伝費', '家賃', 'その他'],
-            datasets: [{
-                data: [45, 25, 20, 10],
-                backgroundColor: [
-                    'rgb(59, 130, 246)',
-                    'rgb(16, 185, 129)',
-                    'rgb(249, 115, 22)',
-                    'rgb(107, 114, 128)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-
-    // 日付・時刻の更新
+    // 日付と時刻の更新
     function updateDateTime() {
         const now = new Date();
-        
-        // 日付のフォーマット
         const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-        document.getElementById('current-date').textContent = now.toLocaleDateString('ja-JP', dateOptions);
-        
-        // 時刻のフォーマット
         const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        
+        document.getElementById('current-date').textContent = now.toLocaleDateString('ja-JP', dateOptions);
         document.getElementById('current-time').textContent = now.toLocaleTimeString('ja-JP', timeOptions);
     }
-
+    
     // 励ましのメッセージ
-    const motivationalMessages = [
-        "今日も一歩前進！",
-        "小さな進歩が大きな成功につながります",
-        "できることから始めましょう",
-        "今日という日を大切に",
-        "一緒に頑張りましょう！",
-        "あなたの努力は必ず実を結びます",
-        "今日が最高の1日になりますように"
+    const encouragementMessages = [
+        "今日も一日頑張りましょう！",
+        "小さな進歩も大切な一歩です",
+        "チームで協力して目標達成を目指しましょう",
+        "困難は成長の機会です",
+        "計画を立てて着実に前進しましょう",
+        "今月の目標達成まであと少しです！",
+        "新しいアイデアが会社を成長させます",
+        "今日の努力が明日の成果につながります"
     ];
-
-    function setMotivationalMessage() {
-        const messageIndex = Math.floor(Math.random() * motivationalMessages.length);
-        document.getElementById('motivation-message').textContent = motivationalMessages[messageIndex];
+    
+    function setRandomEncouragement() {
+        const randomIndex = Math.floor(Math.random() * encouragementMessages.length);
+        document.getElementById('encouragement-message').textContent = encouragementMessages[randomIndex];
     }
-
-    // 初期化と定期更新
+    
+    // 初期更新と定期更新の設定
     updateDateTime();
-    setMotivationalMessage();
-    setInterval(updateDateTime, 1000); // 1秒ごとに時刻を更新
-    setInterval(setMotivationalMessage, 3600000); // 1時間ごとに励ましの言葉を更新
-});
-</script>
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // チャートデータのAPIリクエスト
-    fetch('/api/dashboard/chart-data')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('APIエラー:', data.error);
-                return;
+    setRandomEncouragement();
+    setInterval(updateDateTime, 1000);
+    setInterval(setRandomEncouragement, 3600000); // 1時間ごとに更新
+    
+    // 売上推移グラフ用のダミーデータ
+    const revenueData = {
+        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+        datasets: [
+            {
+                label: '売上',
+                data: [8500000, 9200000, 8700000, 10300000, 9800000, 11200000],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true
+            },
+            {
+                label: '利益',
+                data: [2300000, 2500000, 2100000, 2800000, 2600000, 3100000],
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true
+            },
+            {
+                label: '資金残高',
+                data: [12500000, 13100000, 13800000, 14500000, 15000000, 15500000],
+                borderColor: 'rgb(139, 92, 246)',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                borderWidth: 2,
+                fill: true
             }
-            
-            // Chart.jsでグラフ作成
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            const revenueChart = new Chart(ctx, {
-                type: 'line',
-                data: data,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: '売上・利益・資金残高の推移',
-                            font: {
-                                size: 16
-                            }
-                        },
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('ja-JP', { 
-                                            style: 'currency', 
-                                            currency: 'JPY' 
-                                        }).format(context.parsed.y);
-                                    }
-                                    return label;
-                                }
-                            }
+        ]
+    };
+    
+    // 費用内訳用のダミーデータ
+    const expenseData = {
+        labels: ['人件費', '営業費', '設備費', '研究開発費', 'その他'],
+        datasets: [{
+            data: [4500000, 2200000, 1800000, 1500000, 1000000],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    
+    // APIリクエストの代わりにダミーデータを直接使用
+    try {
+        // 売上推移グラフ作成
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: revenueData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '売上・利益・資金残高の推移',
+                        font: {
+                            size: 16
                         }
                     },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: '月'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: '金額（円）'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return new Intl.NumberFormat('ja-JP', { 
-                                        style: 'currency', 
-                                        currency: 'JPY',
-                                        notation: 'compact',
-                                        compactDisplay: 'short'
-                                    }).format(value);
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
                                 }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('ja-JP', { 
+                                        style: 'currency', 
+                                        currency: 'JPY' 
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '月'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '金額（円）'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('ja-JP', { 
+                                    style: 'currency', 
+                                    currency: 'JPY',
+                                    notation: 'compact',
+                                    compactDisplay: 'short'
+                                }).format(value);
                             }
                         }
                     }
                 }
-            });
-        })
-        .catch(error => {
-            console.error('フェッチエラー:', error);
+            }
         });
         
+        // 費用内訳円グラフ作成
+        const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+        const expenseChart = new Chart(expenseCtx, {
+            type: 'doughnut',
+            data: expenseData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.raw !== null) {
+                                    label += new Intl.NumberFormat('ja-JP', { 
+                                        style: 'currency', 
+                                        currency: 'JPY' 
+                                    }).format(context.raw);
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((context.raw / total) * 100);
+                                    label += ' (' + percentage + '%)';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('グラフ作成エラー:', error);
+    }
+        
+    // PDFエクスポート関数
+    function exportPdf() {
+        fetch('/api/export/pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: 'dashboard',
+                date: new Date().toISOString().split('T')[0]
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('PDF出力でエラーが発生しました');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dashboard_' + new Date().toISOString().split('T')[0] + '.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('PDFエクスポートエラー:', error);
+            alert('PDFの出力に失敗しました。もう一度お試しください。');
+        });
+    }
+    
+    // PPTエクスポート関数
+    function exportPpt() {
+        fetch('/api/export/ppt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: 'dashboard',
+                date: new Date().toISOString().split('T')[0]
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('PPT出力でエラーが発生しました');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dashboard_' + new Date().toISOString().split('T')[0] + '.pptx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('PPTエクスポートエラー:', error);
+            alert('PPTの出力に失敗しました。もう一度お試しください。');
+        });
+    }
+    
     // PDFエクスポートボタン
     document.getElementById('exportPdfBtn').addEventListener('click', function() {
         exportPdf();
@@ -491,6 +561,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- ダッシュボード用JavaScript -->
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-{% endblock scripts %}
-
-{% endblock content %} 
+{% endblock %} 
