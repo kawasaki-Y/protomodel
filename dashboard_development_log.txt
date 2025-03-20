@@ -74,4 +74,17 @@
 ## 5. 重要なファイル
 - `app/templates/dashboard.html`: ダッシュボードのメインテンプレート
 
+## 6. デプロイ関連の問題と解決策
+
+### 6.1 Renderデプロイエラー
+**症状**: `gunicorn.errors.AppImportError: Failed to find attribute 'app' in 'app'.`
+**原因**: Renderのデフォルト起動コマンド`gunicorn app:app`がFlaskアプリインスタンスを見つけられない
+**解決策**: 
+1. WSGIエントリーポイントファイル（wsgi.py）を作成
+2. Renderの起動コマンドを`gunicorn wsgi:app`に変更
+
+このエラーはFlaskアプリケーションのファクトリーパターンを使用している場合によく発生します。
+WSGIファイルを作成することで、Flaskアプリケーションインスタンスを明示的に生成し、
+Gunicornがそれを見つけられるようになります。
+
 ※次回の開発では、APIエンドポイントの実装とルーティングの正しい設定が最優先事項です。 
