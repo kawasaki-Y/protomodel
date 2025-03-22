@@ -361,4 +361,100 @@ function initializeSidebar() {
             }
         });
     });
+}
+
+// チュートリアル表示機能
+function showTutorial(type) {
+    const tutorials = {
+        quickstart: {
+            title: '経営管理システム 初心者ガイド',
+            steps: [
+                {
+                    title: 'ダッシュボードの使い方',
+                    content: 'KPI、グラフ、タスク管理など、主要な機能の概要を説明します。'
+                },
+                {
+                    title: '事業計画の作成手順',
+                    content: '事業設定から収益計画作成までの流れを解説します。'
+                },
+                {
+                    title: 'レポート作成と分析',
+                    content: 'データの分析方法とレポート作成のポイントを紹介します。'
+                }
+            ]
+        },
+        business: {
+            title: '事業計画の作成方法',
+            steps: [
+                {
+                    title: 'Step 1: 事業設定',
+                    content: '「事業設定」から新規事業を登録します。'
+                },
+                {
+                    title: 'Step 2: サービス設定',
+                    content: '提供するサービスと標準単価を設定します。'
+                },
+                {
+                    title: 'Step 3: 顧客設定',
+                    content: '主要顧客や市場セグメントを登録します。'
+                },
+                {
+                    title: 'Step 4: 収益計画作成',
+                    content: '月別の販売数を入力し、売上を計画します。'
+                }
+            ]
+        },
+        kpi: {
+            title: 'KPI分析の活用方法',
+            steps: [
+                {
+                    title: '売上高の分析',
+                    content: '計画と実績の差異を確認し、改善策を検討します。'
+                },
+                {
+                    title: '利益率の確認',
+                    content: '商品・サービスごとの収益性を分析します。'
+                }
+            ]
+        },
+        report: {
+            title: 'レポート作成のコツ',
+            steps: [
+                {
+                    title: 'データの可視化',
+                    content: 'グラフや表を効果的に使用します。'
+                },
+                {
+                    title: '定期的な更新',
+                    content: 'KPIの推移を継続的に監視します。'
+                }
+            ]
+        }
+    };
+
+    const tutorial = tutorials[type];
+    if (!tutorial) return;
+
+    // モーダルでチュートリアルを表示
+    const modalHtml = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg max-w-2xl w-full mx-4 p-6">
+                <h2 class="text-2xl font-bold mb-4">${tutorial.title}</h2>
+                <div class="space-y-4">
+                    ${tutorial.steps.map(step => `
+                        <div class="border-l-4 border-blue-500 pl-4">
+                            <h3 class="font-semibold">${step.title}</h3>
+                            <p class="text-gray-600">${step.content}</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <button onclick="this.closest('.fixed').remove()" 
+                        class="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 } 

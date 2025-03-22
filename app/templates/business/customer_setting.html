@@ -5,42 +5,74 @@
 {% block page_title %}顧客設定{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-6">
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-2xl font-bold mb-6">顧客設定</h2>
-        <p class="mb-4">収益計画に含める顧客や市場を登録します。</p>
-        
-        <div id="customer-form-area" class="mb-6">
-            <h3 class="text-lg font-bold mb-4">新規顧客の登録</h3>
-            <form id="customer-form" class="space-y-4">
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold mb-4">顧客設定</h1>
+        <p class="text-gray-600">各事業の顧客情報を登録・管理します。</p>
+    </div>
+
+    <!-- 顧客登録フォーム -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">新規顧客登録</h2>
+        <form method="POST" action="{{ url_for('main.customer_setting') }}">
+            <div class="grid gap-6">
                 <div>
-                    <label for="customer_name" class="block text-sm font-medium text-gray-700">顧客名</label>
-                    <input type="text" id="customer_name" name="customer_name" required
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <label for="business_id" class="block text-sm font-medium text-gray-700">事業選択</label>
+                    <select name="business_id" id="business_id" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        {% for business in businesses %}
+                        <option value="{{ business.id }}">{{ business.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div>
-                    <label for="default_price" class="block text-sm font-medium text-gray-700">標準単価（円、任意）</label>
-                    <input type="number" id="default_price" name="default_price" min="0"
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <label for="name" class="block text-sm font-medium text-gray-700">顧客名</label>
+                    <input type="text" name="name" id="name" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label for="customer_description" class="block text-sm font-medium text-gray-700">顧客概要（任意）</label>
-                    <textarea id="customer_description" name="customer_description" rows="3"
-                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    <label for="price_factor" class="block text-sm font-medium text-gray-700">価格調整係数</label>
+                    <input type="number" name="price_factor" id="price_factor" step="0.1" value="1.0"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">標準価格に対する調整係数（1.0 = 標準価格）</p>
                 </div>
                 <div>
-                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        顧客を登録する
+                    <button type="submit" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        登録する
                     </button>
                 </div>
-            </form>
-        </div>
-        
-        <div id="customer-list-area">
-            <h3 class="text-lg font-bold mb-4">登録済みの顧客一覧</h3>
-            <div id="customer-list" class="space-y-2">
-                <!-- ここにJSで登録済み顧客一覧が表示される -->
-                <p class="text-gray-500">登録済みの顧客がここに表示されます。</p>
+            </div>
+        </form>
+    </div>
+
+    <!-- 登録済み顧客一覧 -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4">登録済み顧客一覧</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">事業名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">顧客名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">価格調整係数</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録日</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for business in businesses %}
+                            {% for customer in business.customers %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ business.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ customer.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ customer.price_factor }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

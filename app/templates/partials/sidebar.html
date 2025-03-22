@@ -5,70 +5,77 @@
     <nav class="mt-4">
         <ul class="space-y-2 px-2">
             <li>
-                <a href="{{ url_for('main.dashboard') }}" class="sidebar-link {% if request.endpoint == 'main.dashboard' %}bg-gray-700{% endif %}">
+                <a href="{{ url_for('main.dashboard') }}" class="sidebar-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
                     <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
                 </a>
             </li>
             
-            <!-- 計画作成メニュー -->
+            <!-- 計画作成 -->
             <li>
-                <a href="#" class="sidebar-link has-submenu" data-submenu="planning">
-                    <div class="flex justify-between w-full">
+                <div class="sidebar-menu-item">
+                    <button class="sidebar-dropdown-toggle flex items-center justify-between w-full py-2 px-4 hover:bg-gray-700 rounded text-left">
                         <div>
                             <i class="fas fa-chart-line mr-2"></i>計画作成
                         </div>
-                        <i class="fas fa-chevron-down text-xs submenu-arrow"></i>
-                    </div>
-                </a>
-                <ul id="planning-submenu" class="submenu {% if 'business-setting' in request.path or 'service-setting' in request.path or 'customer-setting' in request.path or 'revenue-plan' in request.path %}active{% endif %}">
-                    <li>
-                        <a href="#" class="sidebar-sublink has-submenu" data-submenu="revenue">
-                            <div class="flex justify-between w-full">
-                                <div>
-                                    <i class="fas fa-file-invoice-dollar mr-2"></i>収益計画を作成
-                                </div>
-                                <i class="fas fa-chevron-down text-xs submenu-arrow"></i>
+                        <i class="fas fa-chevron-down text-sm"></i>
+                    </button>
+                    <ul class="sidebar-dropdown-menu pl-4 mt-1 hidden">
+                        <!-- 収益計画を作成 -->
+                        <li>
+                            <div class="sidebar-submenu-item">
+                                <button class="sidebar-submenu-toggle flex items-center justify-between w-full py-2 px-4 hover:bg-gray-700 rounded text-left">
+                                    <div>
+                                        <i class="fas fa-file-invoice-dollar mr-2"></i>収益計画を作成
+                                    </div>
+                                    <i class="fas fa-chevron-down text-sm"></i>
+                                </button>
+                                <ul class="sidebar-submenu pl-4 mt-1 hidden">
+                                    <li>
+                                        <a href="{{ url_for('main.revenue_plan') }}" 
+                                           class="block py-2 px-4 hover:bg-gray-700 rounded">
+                                            <i class="fas fa-chart-bar mr-2"></i>収益計画
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ url_for('main.business_setting') }}"
+                                           class="block py-2 px-4 hover:bg-gray-700 rounded">
+                                            <i class="fas fa-building mr-2"></i>事業設定
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ url_for('main.service_setting') }}"
+                                           class="block py-2 px-4 hover:bg-gray-700 rounded">
+                                            <i class="fas fa-box mr-2"></i>サービス設定
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ url_for('main.customer_setting') }}"
+                                           class="block py-2 px-4 hover:bg-gray-700 rounded">
+                                            <i class="fas fa-users mr-2"></i>顧客設定
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
-                        </a>
-                        <ul id="revenue-submenu" class="sub-submenu {% if 'business-setting' in request.path or 'service-setting' in request.path or 'customer-setting' in request.path or 'revenue-plan' in request.path %}active{% endif %}">
-                            <li>
-                                <a href="{{ url_for('main.revenue_plan') }}" class="sidebar-sub-sublink {% if 'revenue-plan' in request.path %}bg-gray-700{% endif %}">
-                                    <i class="fas fa-chart-bar mr-2"></i>収益計画
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ url_for('main.business_setting') }}" class="sidebar-sub-sublink {% if 'business-setting' in request.path %}bg-gray-700{% endif %}">
-                                    <i class="fas fa-building mr-2"></i>事業設定
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ url_for('main.service_setting') }}" class="sidebar-sub-sublink {% if 'service-setting' in request.path %}bg-gray-700{% endif %}">
-                                    <i class="fas fa-box mr-2"></i>サービス設定
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ url_for('main.customer_setting') }}" class="sidebar-sub-sublink {% if 'customer-setting' in request.path %}bg-gray-700{% endif %}">
-                                    <i class="fas fa-users mr-2"></i>顧客設定
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#" class="sidebar-sublink">
-                            <i class="fas fa-money-bill-wave mr-2"></i>費用計画を作成
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="sidebar-sublink">
-                            <i class="fas fa-coins mr-2"></i>資金繰りを作成
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="sidebar-sublink">
-                            <i class="fas fa-university mr-2"></i>資本政策を作成
-                        </a>
-                    </li>
-                </ul>
+                        </li>
+                        
+                        <!-- その他の計画（UIのみ） -->
+                        <li>
+                            <a href="#" class="block py-2 px-4 hover:bg-gray-700 rounded">
+                                <i class="fas fa-money-bill-wave mr-2"></i>費用計画を作成
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="block py-2 px-4 hover:bg-gray-700 rounded">
+                                <i class="fas fa-coins mr-2"></i>資金繰りを作成
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="block py-2 px-4 hover:bg-gray-700 rounded">
+                                <i class="fas fa-university mr-2"></i>資本政策を作成
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
             
             <!-- その他のメニュー項目 -->
