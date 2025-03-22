@@ -334,4 +334,64 @@ def delete_revenue_plan_row():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"収益計画の行削除中にエラーが発生: {str(e)}")
-        return jsonify({'error': '行の削除に失敗しました'}), 500 
+        return jsonify({'error': '行の削除に失敗しました'}), 500
+
+@bp.route('/api/business/<int:business_id>', methods=['PUT'])
+@login_required
+def update_business(business_id):
+    try:
+        business = RevenueBusiness.query.get_or_404(business_id)
+        if business.user_id != current_user.id:
+            abort(403)
+        
+        data = request.get_json()
+        business.name = data.get('name')
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/business/<int:business_id>', methods=['DELETE'])
+@login_required
+def delete_business(business_id):
+    try:
+        business = RevenueBusiness.query.get_or_404(business_id)
+        if business.user_id != current_user.id:
+            abort(403)
+        
+        db.session.delete(business)
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/customer/<int:customer_id>', methods=['PUT'])
+@login_required
+def update_customer(customer_id):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        data = request.get_json()
+        customer.name = data.get('name')
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/customer/<int:customer_id>', methods=['DELETE'])
+@login_required
+def delete_customer(customer_id):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        db.session.delete(customer)
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500 

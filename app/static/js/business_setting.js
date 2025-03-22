@@ -69,4 +69,77 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初期表示時に事業一覧を読み込む
     loadBusinesses();
-}); 
+});
+
+function editBusiness(businessId) {
+    const row = document.getElementById(`business-row-${businessId}`);
+    const nameSpan = row.querySelector('.business-name');
+    const nameInput = row.querySelector('.business-edit-input');
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+
+    nameSpan.classList.add('hidden');
+    nameInput.classList.remove('hidden');
+    editBtn.classList.add('hidden');
+    saveBtn.classList.remove('hidden');
+}
+
+async function saveBusiness(businessId) {
+    const row = document.getElementById(`business-row-${businessId}`);
+    const nameInput = row.querySelector('.business-edit-input');
+    const newName = nameInput.value.trim();
+
+    if (!newName) {
+        alert('事業名を入力してください。');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/business/${businessId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: newName })
+        });
+
+        if (response.ok) {
+            const nameSpan = row.querySelector('.business-name');
+            const editBtn = row.querySelector('.edit-btn');
+            const saveBtn = row.querySelector('.save-btn');
+
+            nameSpan.textContent = newName;
+            nameSpan.classList.remove('hidden');
+            nameInput.classList.add('hidden');
+            editBtn.classList.remove('hidden');
+            saveBtn.classList.add('hidden');
+        } else {
+            alert('事業名の更新に失敗しました。');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('事業名の更新中にエラーが発生しました。');
+    }
+}
+
+async function deleteBusiness(businessId) {
+    if (!confirm('この事業を削除してもよろしいですか？')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/business/${businessId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            const row = document.getElementById(`business-row-${businessId}`);
+            row.remove();
+        } else {
+            alert('事業の削除に失敗しました。');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('事業の削除中にエラーが発生しました。');
+    }
+} 
