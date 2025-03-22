@@ -1,21 +1,13 @@
 let currentBusinessId = null;
 let customers = [];
-let revenuePlanData = {};
+let planData = {};
 
 // 事業切り替え
 function switchBusiness(businessId) {
-    // 全てのテーブルを非表示
-    document.querySelectorAll('.business-table').forEach(table => {
-        table.classList.add('hidden');
-    });
+    currentBusinessId = businessId;
+    loadRevenuePlan(businessId);
     
-    // 選択された事業のテーブルを表示
-    const selectedTable = document.getElementById(`business-table-${businessId}`);
-    if (selectedTable) {
-        selectedTable.classList.remove('hidden');
-    }
-    
-    // タブのスタイルを更新
+    // タブのスタイル更新
     document.querySelectorAll('.business-tab').forEach(tab => {
         tab.classList.remove('border-blue-500', 'text-blue-600');
         tab.classList.add('border-transparent', 'text-gray-500');
@@ -24,9 +16,6 @@ function switchBusiness(businessId) {
             tab.classList.remove('border-transparent', 'text-gray-500');
         }
     });
-    
-    currentBusinessId = businessId;
-    loadRevenuePlan(businessId);
 }
 
 // 収益計画データの読み込み
@@ -34,8 +23,9 @@ async function loadRevenuePlan(businessId) {
     try {
         const response = await fetch(`/api/revenue-plan/${businessId}`);
         const data = await response.json();
+        
         customers = data.customers;
-        revenuePlanData = data.values || {};
+        planData = data.values || {};
         renderRevenuePlan();
     } catch (error) {
         console.error('収益計画の読み込みに失敗:', error);
@@ -45,227 +35,292 @@ async function loadRevenuePlan(businessId) {
 
 // 収益計画テーブルの描画
 function renderRevenuePlan() {
-    const tbody = document.querySelector(`#revenue-table-body-${currentBusinessId}`);
+    const tbody = document.getElementById('revenue-plan-body');
     tbody.innerHTML = '';
 
-    customers.forEach(customer => {
-        const row = document.createElement('tr');
-        
-        // 事業名と顧客名
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${currentBusiness.name}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+    // 既存のデータ行の描画
+    Object.entries(planData).forEach(([customerId, data]) => {
+        const row = createPlanRow(customerId, data);
+        tbody.appendChild(row);
+    });
+
+    updateTotals();
+}
+
+// 新規行の追加（修正）
+function addNewRow() {
+    console.log('Adding new row...'); // デバッグログ
+    const tbody = document.getElementById('revenue-plan-body');
+    if (!tbody) {
+        console.error('Table body not found!');
+        return;
+    }
+
+    const row = createPlanRow();
+    row.classList.add('fade-in');
+    tbody.appendChild(row);
+
+    // 新規行は編集可能な状態で開始
+    row.querySelectorAll('input, select').forEach(input => {
+        input.disabled = false;
+    });
+    row.classList.add('editing');
+
+    // 編集ボタンのアイコンを保存に変更
+    const editBtn = row.querySelector('.edit-btn');
+    if (editBtn) {
+        editBtn.innerHTML = '<i class="fas fa-save"></i>';
+    }
+
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// 行の作成（修正）
+function createPlanRow(customerId = null, data = null) {
+    const row = document.createElement('tr');
+    row.className = 'plan-row';
+    
+    // 顧客選択セル
+    const customerCell = document.createElement('td');
+    customerCell.className = 'px-6 py-4 whitespace-nowrap';
+    const customerSelect = document.createElement('select');
+    customerSelect.className = 'customer-select mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500';
+    customerSelect.innerHTML = `
+        <option value="">顧客を選択</option>
+        ${customers.map(customer => `
+            <option value="${customer.id}" ${customerId === customer.id ? 'selected' : ''}>
                 ${customer.name}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <input type="number" 
-                       class="unit-price border-gray-300 rounded-md"
-                       data-customer-id="${customer.id}"
-                       value="${getUnitPrice(customer.id)}"
-                       onchange="updateAmounts(${customer.id})">
-            </td>
-        `;
+            </option>
+        `).join('')}
+    `;
+    customerCell.appendChild(customerSelect);
+    row.appendChild(customerCell);
 
-        // 月別の入力欄（4列目～15列目）
-        for (let month = 1; month <= 12; month++) {
-            row.innerHTML += `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <input type="number" 
-                           class="quantity border-gray-300 rounded-md mb-1"
-                           data-customer-id="${customer.id}"
-                           data-month="${month}"
-                           value="${getQuantity(customer.id, month)}"
-                           onchange="updateAmount(${customer.id}, ${month})">
-                    <div class="amount text-gray-500 text-sm">
-                        ${formatAmount(calculateAmount(customer.id, month))}
-                    </div>
-                </td>
-            `;
-        }
+    // 単価入力セル
+    const priceCell = document.createElement('td');
+    priceCell.className = 'px-6 py-4 whitespace-nowrap';
+    const priceInput = document.createElement('input');
+    priceInput.type = 'number';
+    priceInput.className = 'unit-price mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500';
+    priceInput.value = data?.unit_price || '';
+    priceInput.onchange = () => updateRowCalculations(row);
+    priceCell.appendChild(priceInput);
+    row.appendChild(priceCell);
 
-        // 年間合計（16列目）
-        row.innerHTML += `
-            <td class="px-6 py-4 whitespace-nowrap font-bold customer-total" 
-                data-customer-id="${customer.id}">
-                ${formatAmount(calculateCustomerTotal(customer.id))}
-            </td>
-        `;
+    // 月別入力セル
+    for (let month = 1; month <= 12; month++) {
+        const monthCell = document.createElement('td');
+        monthCell.className = 'px-6 py-4 whitespace-nowrap';
+        
+        // 予想販売数入力
+        const quantityInput = document.createElement('input');
+        quantityInput.type = 'number';
+        quantityInput.className = 'quantity-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500';
+        quantityInput.dataset.month = month;
+        quantityInput.value = data?.quantities?.[month] || '';
+        quantityInput.onchange = () => updateRowCalculations(row);
+        
+        // 売上表示
+        const amountDiv = document.createElement('div');
+        amountDiv.className = 'amount-display text-sm text-gray-500 mt-1';
+        amountDiv.textContent = '¥0';
+        
+        monthCell.appendChild(quantityInput);
+        monthCell.appendChild(amountDiv);
+        row.appendChild(monthCell);
+    }
 
-        tbody.appendChild(row);
+    // 年間合計セル
+    const totalCell = document.createElement('td');
+    totalCell.className = 'px-6 py-4 whitespace-nowrap font-bold row-total';
+    totalCell.textContent = '¥0';
+    row.appendChild(totalCell);
+
+    // 操作セルの修正
+    const actionCell = document.createElement('td');
+    actionCell.className = 'px-6 py-4 whitespace-nowrap';
+    const actionDiv = document.createElement('div');
+    actionDiv.className = 'flex space-x-2';
+
+    // 編集ボタン
+    const editButton = document.createElement('button');
+    editButton.className = 'edit-btn text-blue-600 hover:text-blue-900';
+    editButton.innerHTML = '<i class="fas fa-edit"></i>';
+    editButton.addEventListener('click', function() {
+        editRow(this);
     });
 
-    updateTotals();
-    renderTotalSummary();
-}
-
-// 全体集計テーブルの描画
-function renderTotalSummary() {
-    const tbody = document.querySelector('#total-summary-body');
-    tbody.innerHTML = '';
-
-    businesses.forEach(business => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap font-medium">${business.name}</td>
-        `;
-
-        // 月別合計
-        for (let month = 1; month <= 12; month++) {
-            const monthTotal = calculateBusinessMonthTotal(business.id, month);
-            row.innerHTML += `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    ${formatAmount(monthTotal)}
-                </td>
-            `;
-        }
-
-        // 事業年間合計
-        const yearTotal = calculateBusinessYearTotal(business.id);
-        row.innerHTML += `
-            <td class="px-6 py-4 whitespace-nowrap font-bold">
-                ${formatAmount(yearTotal)}
-            </td>
-        `;
-
-        tbody.appendChild(row);
+    // 削除ボタン
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn text-red-600 hover:text-red-900';
+    deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+    deleteButton.addEventListener('click', function() {
+        deleteRow(this);
     });
+
+    actionDiv.appendChild(editButton);
+    actionDiv.appendChild(deleteButton);
+    actionCell.appendChild(actionDiv);
+    row.appendChild(actionCell);
+
+    // 初期状態では入力フィールドを無効化
+    row.querySelectorAll('input, select').forEach(input => {
+        input.disabled = true;
+    });
+
+    return row;
 }
 
-// 単価の取得
-function getUnitPrice(customerId) {
-    return revenuePlanData[customerId]?.unit_price || 0;
-}
+// 行の計算更新
+function updateRowCalculations(row) {
+    const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+    let rowTotal = 0;
 
-// 数量の取得
-function getQuantity(customerId, month) {
-    return revenuePlanData[customerId]?.quantities?.[month] || 0;
-}
+    // 各月の売上計算
+    row.querySelectorAll('.quantity-input').forEach(input => {
+        const quantity = parseFloat(input.value) || 0;
+        const amount = unitPrice * quantity;
+        const amountDisplay = input.nextElementSibling;
+        amountDisplay.textContent = `¥${formatNumber(amount)}`;
+        rowTotal += amount;
+    });
 
-// 金額の計算
-function calculateAmount(customerId, month) {
-    const unitPrice = getUnitPrice(customerId);
-    const quantity = getQuantity(customerId, month);
-    return unitPrice * quantity;
-}
-
-// 顧客ごとの合計計算
-function calculateCustomerTotal(customerId) {
-    let total = 0;
-    for (let month = 1; month <= 12; month++) {
-        total += calculateAmount(customerId, month);
-    }
-    return total;
-}
-
-// 金額のフォーマット
-function formatAmount(amount) {
-    return new Intl.NumberFormat('ja-JP').format(amount);
-}
-
-// 数量変更時の処理
-function updateAmount(customerId, month) {
-    const row = document.querySelector(`tr[data-customer-id="${customerId}"]`);
-    const quantityInput = row.querySelector(`input[data-month="${month}"]`);
-    const quantity = parseInt(quantityInput.value) || 0;
-
-    if (!revenuePlanData[customerId]) {
-        revenuePlanData[customerId] = { quantities: {} };
-    }
-    if (!revenuePlanData[customerId].quantities) {
-        revenuePlanData[customerId].quantities = {};
-    }
-    revenuePlanData[customerId].quantities[month] = quantity;
-
-    const amount = calculateAmount(customerId, month);
-    const amountDiv = quantityInput.nextElementSibling;
-    amountDiv.textContent = formatAmount(amount);
-
-    updateCustomerTotal(customerId);
+    // 行合計の更新
+    row.querySelector('.row-total').textContent = `¥${formatNumber(rowTotal)}`;
     updateTotals();
 }
 
-// 単価変更時の処理
-function updateAmounts(customerId) {
-    const unitPriceInput = document.querySelector(`input.unit-price[data-customer-id="${customerId}"]`);
-    const unitPrice = parseInt(unitPriceInput.value) || 0;
-
-    if (!revenuePlanData[customerId]) {
-        revenuePlanData[customerId] = {};
-    }
-    revenuePlanData[customerId].unit_price = unitPrice;
-
-    // 全ての月の金額を更新
-    for (let month = 1; month <= 12; month++) {
-        const amount = calculateAmount(customerId, month);
-        const amountDiv = document.querySelector(
-            `tr[data-customer-id="${customerId}"] td:nth-child(${month + 2}) .amount`
-        );
-        amountDiv.textContent = formatAmount(amount);
-    }
-
-    updateCustomerTotal(customerId);
-    updateTotals();
-}
-
-// 顧客合計の更新
-function updateCustomerTotal(customerId) {
-    const total = calculateCustomerTotal(customerId);
-    const totalCell = document.querySelector(`.customer-total[data-customer-id="${customerId}"]`);
-    totalCell.textContent = formatAmount(total);
-}
-
-// 全体の合計更新
+// 合計の更新
 function updateTotals() {
-    // 月別合計の更新
-    for (let month = 1; month <= 12; month++) {
-        let monthTotal = 0;
-        customers.forEach(customer => {
-            monthTotal += calculateAmount(customer.id, month);
-        });
-        const monthTotalCell = document.querySelector(`.month-total[data-month="${month}"]`);
-        monthTotalCell.textContent = formatAmount(monthTotal);
-    }
+    const rows = document.querySelectorAll('.plan-row');
+    let yearTotal = 0;
 
-    // 総合計の更新
-    let grandTotal = 0;
-    customers.forEach(customer => {
-        grandTotal += calculateCustomerTotal(customer.id);
+    // 月別合計の初期化
+    const monthTotals = Array(12).fill(0);
+
+    // 各行の集計
+    rows.forEach(row => {
+        row.querySelectorAll('.amount-display').forEach((display, index) => {
+            const amount = parseAmountDisplay(display.textContent);
+            monthTotals[index] += amount;
+        });
     });
-    document.querySelector('.grand-total').textContent = formatAmount(grandTotal);
+
+    // 月別合計の表示更新
+    monthTotals.forEach((total, index) => {
+        const monthTotalCell = document.querySelector(`.month-total[data-month="${index + 1}"]`);
+        monthTotalCell.textContent = `¥${formatNumber(total)}`;
+        yearTotal += total;
+    });
+
+    // 年間合計の更新
+    document.querySelector('.year-total').textContent = `¥${formatNumber(yearTotal)}`;
 }
 
-// 収益計画の保存
-async function saveRevenuePlan() {
-    try {
-        const response = await fetch('/api/revenue-plan', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                business_id: currentBusinessId,
-                values: revenuePlanData
-            })
-        });
-
-        if (response.ok) {
-            alert('収益計画を保存しました。');
-        } else {
-            throw new Error('保存に失敗しました。');
-        }
-    } catch (error) {
-        console.error('収益計画の保存に失敗:', error);
-        alert('保存に失敗しました。');
+// 行の削除（修正）
+function deleteRow(button) {
+    console.log('Deleting row...'); // デバッグログ
+    if (confirm('この行を削除してもよろしいですか？')) {
+        const row = button.closest('tr');
+        row.classList.add('fade-out');
+        
+        setTimeout(() => {
+            row.remove();
+            updateTotals();
+        }, 300);
     }
 }
 
-// ページ読み込み時に最初の事業を選択
+// 数値のフォーマット
+function formatNumber(number) {
+    return new Intl.NumberFormat('ja-JP').format(number);
+}
+
+// 金額表示からの数値変換
+function parseAmountDisplay(text) {
+    return parseFloat(text.replace('¥', '').replace(/,/g, '')) || 0;
+}
+
+// 行の編集モード切り替え（修正）
+function editRow(button) {
+    console.log('Editing row...'); // デバッグログ
+    const row = button.closest('tr');
+    const inputs = row.querySelectorAll('input, select');
+    const isEditing = row.classList.contains('editing');
+
+    if (isEditing) {
+        // 編集モードを終了
+        row.classList.remove('editing');
+        inputs.forEach(input => {
+            input.disabled = true;
+        });
+        button.innerHTML = '<i class="fas fa-edit"></i>';
+        updateRowCalculations(row);
+    } else {
+        // 編集モードを開始
+        row.classList.add('editing');
+        inputs.forEach(input => {
+            input.disabled = false;
+        });
+        button.innerHTML = '<i class="fas fa-save"></i>';
+    }
+}
+
+// DOMContentLoadedイベントリスナーの修正
 document.addEventListener('DOMContentLoaded', () => {
     const firstTab = document.querySelector('.business-tab');
     if (firstTab) {
         const businessId = parseInt(firstTab.dataset.businessId);
         switchBusiness(businessId);
     }
-}); 
+
+    // 行追加ボタンのイベントリスナーを修正
+    const addButton = document.querySelector('.add-row-btn');
+    if (addButton) {
+        addButton.addEventListener('click', addNewRow);
+        console.log('Add button listener attached');
+    } else {
+        console.error('Add button not found!');
+    }
+});
+
+// スタイルの追加（修正）
+const style = document.createElement('style');
+style.textContent = `
+    .fade-in {
+        opacity: 0;
+        animation: fadeIn 0.3s ease-in forwards;
+    }
+    
+    .fade-out {
+        opacity: 1;
+        animation: fadeOut 0.3s ease-out forwards;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(10px); }
+    }
+    
+    .edit-btn, .delete-btn {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .edit-btn:hover, .delete-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .editing input, .editing select {
+        background-color: #f8fafc;
+        border-color: #3b82f6;
+    }
+`;
+document.head.appendChild(style); 

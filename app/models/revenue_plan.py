@@ -8,10 +8,16 @@ class RevenuePlan(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     business_id = db.Column(db.Integer, db.ForeignKey('revenue_businesses.id'), nullable=False)
-    year = db.Column(db.Integer, nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
+    unit_price = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # 月別の数量データはJSONとして保存
+    quantities = db.Column(db.JSON, default=dict)
+
+    business = db.relationship('RevenueBusiness', backref='revenue_plans')
+    customer = db.relationship('Customer', backref='revenue_plans')
     
     # リレーションシップの修正
     details = db.relationship(
