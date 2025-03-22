@@ -229,8 +229,8 @@ def customer_setting():
 @bp.route('/revenue-plan')
 @login_required
 def revenue_plan():
-    """収益計画ページ"""
-    return render_template('business/revenue_plan.html')
+    businesses = RevenueBusiness.query.filter_by(user_id=current_user.id).all()
+    return render_template('business/revenue_plan.html', businesses=businesses)
 
 @bp.route('/api/revenue-plan/<int:business_id>', methods=['GET'])
 @login_required

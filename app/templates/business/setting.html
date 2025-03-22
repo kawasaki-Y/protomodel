@@ -53,5 +53,14 @@
             </div>
         </div>
     </div>
+
+    <!-- 収益計画策定へのボタンを追加 -->
+    <div class="mt-6 flex justify-end">
+        <a href="{{ url_for('main.revenue_plan') }}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+            <i class="fas fa-chart-line mr-2"></i>
+            収益計画策定へ
+        </a>
+    </div>
 </div>
 {% endblock %} 

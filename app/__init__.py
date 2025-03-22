@@ -4,10 +4,11 @@
 from flask import Flask
 from .config import Config
 from .extensions import db, init_extensions
-from flask_login import current_user
+from flask_login import current_user, LoginManager
 import os
 from .models.user import User
 from .models.business import RevenueBusiness
+from flask_migrate import Migrate
 
 def format_number(value):
     """
@@ -45,14 +46,29 @@ def create_app(config_class=Config):
     
     Flaskアプリケーションを初期化し、必要な設定と拡張機能を登録する
     """
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_class)
+    config_class.init_app(app)
     
-    # SQLAlchemyの初期化を最初に行う
+    # データベースディレクトリの確保
+    os.makedirs(app.instance_path, exist_ok=True)
+    
+    # 拡張機能の初期化
     db.init_app(app)
     
-    # その他の拡張機能を初期化
-    init_extensions(app)
+    # LoginManagerの設定
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    
+    # user_loaderの追加
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+    
+    # Migrateの設定
+    migrate = Migrate()
+    migrate.init_app(app, db)
     
     # Blueprintの登録
     from .routes import main_routes, auth_routes, static_routes, settings_routes

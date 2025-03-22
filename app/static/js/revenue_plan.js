@@ -4,7 +4,18 @@ let revenuePlanData = {};
 
 // 事業切り替え
 function switchBusiness(businessId) {
-    currentBusinessId = businessId;
+    // 全てのテーブルを非表示
+    document.querySelectorAll('.business-table').forEach(table => {
+        table.classList.add('hidden');
+    });
+    
+    // 選択された事業のテーブルを表示
+    const selectedTable = document.getElementById(`business-table-${businessId}`);
+    if (selectedTable) {
+        selectedTable.classList.remove('hidden');
+    }
+    
+    // タブのスタイルを更新
     document.querySelectorAll('.business-tab').forEach(tab => {
         tab.classList.remove('border-blue-500', 'text-blue-600');
         tab.classList.add('border-transparent', 'text-gray-500');
@@ -13,6 +24,8 @@ function switchBusiness(businessId) {
             tab.classList.remove('border-transparent', 'text-gray-500');
         }
     });
+    
+    currentBusinessId = businessId;
     loadRevenuePlan(businessId);
 }
 
@@ -32,15 +45,20 @@ async function loadRevenuePlan(businessId) {
 
 // 収益計画テーブルの描画
 function renderRevenuePlan() {
-    const tbody = document.querySelector('#revenue-table tbody');
+    const tbody = document.querySelector(`#revenue-table-body-${currentBusinessId}`);
     tbody.innerHTML = '';
 
     customers.forEach(customer => {
         const row = document.createElement('tr');
         
-        // 顧客名
+        // 事業名と顧客名
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">${customer.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${currentBusiness.name}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${customer.name}
+            </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <input type="number" 
                        class="unit-price border-gray-300 rounded-md"
@@ -50,12 +68,12 @@ function renderRevenuePlan() {
             </td>
         `;
 
-        // 月別の入力欄
+        // 月別の入力欄（4列目～15列目）
         for (let month = 1; month <= 12; month++) {
             row.innerHTML += `
                 <td class="px-6 py-4 whitespace-nowrap">
                     <input type="number" 
-                           class="quantity border-gray-300 rounded-md"
+                           class="quantity border-gray-300 rounded-md mb-1"
                            data-customer-id="${customer.id}"
                            data-month="${month}"
                            value="${getQuantity(customer.id, month)}"
@@ -67,7 +85,7 @@ function renderRevenuePlan() {
             `;
         }
 
-        // 合計
+        // 年間合計（16列目）
         row.innerHTML += `
             <td class="px-6 py-4 whitespace-nowrap font-bold customer-total" 
                 data-customer-id="${customer.id}">
@@ -79,6 +97,40 @@ function renderRevenuePlan() {
     });
 
     updateTotals();
+    renderTotalSummary();
+}
+
+// 全体集計テーブルの描画
+function renderTotalSummary() {
+    const tbody = document.querySelector('#total-summary-body');
+    tbody.innerHTML = '';
+
+    businesses.forEach(business => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap font-medium">${business.name}</td>
+        `;
+
+        // 月別合計
+        for (let month = 1; month <= 12; month++) {
+            const monthTotal = calculateBusinessMonthTotal(business.id, month);
+            row.innerHTML += `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    ${formatAmount(monthTotal)}
+                </td>
+            `;
+        }
+
+        // 事業年間合計
+        const yearTotal = calculateBusinessYearTotal(business.id);
+        row.innerHTML += `
+            <td class="px-6 py-4 whitespace-nowrap font-bold">
+                ${formatAmount(yearTotal)}
+            </td>
+        `;
+
+        tbody.appendChild(row);
+    });
 }
 
 // 単価の取得
@@ -209,7 +261,7 @@ async function saveRevenuePlan() {
     }
 }
 
-// 初期表示時に最初の事業を選択
+// ページ読み込み時に最初の事業を選択
 document.addEventListener('DOMContentLoaded', () => {
     const firstTab = document.querySelector('.business-tab');
     if (firstTab) {
