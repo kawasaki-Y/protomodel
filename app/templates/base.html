@@ -256,7 +256,13 @@
         });
     </script>
 
+    <!-- アプリケーション固有のスクリプト -->
     {% block scripts %}{% endblock %}
+
+    <!-- 共通のJavaScriptファイル -->
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/business.js') }}"></script>
 </body>
 
 </html>

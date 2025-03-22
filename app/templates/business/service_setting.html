@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}サービス設定 | 経営管理システム{% endblock %}
+
+{% block page_title %}サービス設定{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-6">サービス設定</h2>
+        <p class="mb-4">収益計画に含めるサービスや商品を登録します。</p>
+        
+        <div id="service-form-area" class="mb-6">
+            <h3 class="text-lg font-bold mb-4">新規サービスの登録</h3>
+            <form id="service-form" class="space-y-4">
+                <div>
+                    <label for="service_name" class="block text-sm font-medium text-gray-700">サービス名</label>
+                    <input type="text" id="service_name" name="service_name" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="default_price" class="block text-sm font-medium text-gray-700">標準単価（円）</label>
+                    <input type="number" id="default_price" name="default_price" required min="0"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="service_description" class="block text-sm font-medium text-gray-700">サービス概要（任意）</label>
+                    <textarea id="service_description" name="service_description" rows="3"
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                <div>
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        サービスを登録する
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div id="service-list-area">
+            <h3 class="text-lg font-bold mb-4">登録済みのサービス一覧</h3>
+            <div id="service-list" class="space-y-2">
+                <!-- ここにJSで登録済みサービス一覧が表示される -->
+                <p class="text-gray-500">登録済みのサービスがここに表示されます。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // サービス登録フォームのハンドリング
+    document.addEventListener('DOMContentLoaded', function() {
+        const serviceForm = document.getElementById('service-form');
+        if (serviceForm) {
+            serviceForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(serviceForm);
+                
+                // APIを呼び出す（まだ実装はこれから）
+                console.log('サービス登録フォームを送信します:', Object.fromEntries(formData));
+                alert('この機能は次のステップで実装します。');
+            });
+        }
+    });
+</script>
+{% endblock %} 

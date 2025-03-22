@@ -1,167 +1,92 @@
-<div class="sidebar bg-gray-800 text-white w-64 h-screen fixed overflow-y-auto">
-  <div class="p-4 border-b border-gray-700">
-    <h1 class="text-xl font-bold">経営管理システム</h1>
-  </div>
-
-  <nav class="mt-4">
-    <ul class="sidebar-menu">
-      <!-- ホーム -->
-      <li class="sidebar-item">
-        <a href="{{ url_for('main.dashboard') }}" class="sidebar-link">
-          <i class="fas fa-home mr-2"></i>
-          <span>ホーム</span>
-        </a>
-      </li>
-
-      <!-- 計画を確認 -->
-      <li class="sidebar-item">
-        <a href="#" class="sidebar-link has-submenu" data-submenu="check-plan">
-          <i class="fas fa-search mr-2"></i>
-          <span>計画を確認</span>
-          <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-        </a>
-        <ul class="submenu" id="check-plan-submenu">
-          <!-- XXX年度事業計画 -->
-          <li class="sidebar-subitem">
-            <a href="#" class="sidebar-sublink has-submenu" data-submenu="annual-plan">
-              <span>2023年度事業計画</span>
-              <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-            </a>
-            <ul class="sub-submenu" id="annual-plan-submenu">
-              <li><a href="#" class="sidebar-sub-sublink">損益計算書</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">貸借対照表</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">資金繰り表</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">借入返済</a></li>
-            </ul>
-          </li>
-
-          <!-- 中期経営計画 -->
-          <li class="sidebar-subitem">
-            <a href="#" class="sidebar-sublink has-submenu" data-submenu="mid-term-plan">
-              <span>中期経営計画</span>
-              <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-            </a>
-            <ul class="sub-submenu" id="mid-term-plan-submenu">
-              <li><a href="#" class="sidebar-sub-sublink">損益計算書</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">貸借対照表</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">資金繰り表</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">借入返済</a></li>
-            </ul>
-          </li>
-
-          <!-- 資金繰り管理 -->
-          <li class="sidebar-subitem">
-            <a href="#" class="sidebar-sublink">資金繰り管理</a>
-          </li>
-
-          <!-- 資本政策 -->
-          <li class="sidebar-subitem">
-            <a href="#" class="sidebar-sublink">資本政策</a>
-          </li>
-
-          <!-- 実績モニタリング -->
-          <li class="sidebar-subitem">
-            <a href="#" class="sidebar-sublink has-submenu" data-submenu="monitoring">
-              <span>実績モニタリング</span>
-              <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-            </a>
-            <ul class="sub-submenu" id="monitoring-submenu">
-              <li><a href="#" class="sidebar-sub-sublink">事業計画</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">販売計画</a></li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-
-      <!-- 計画を作成 -->
-      <li class="sidebar-item">
-        <a href="#" class="sidebar-link has-submenu" data-submenu="create-plan">
-          <i class="fas fa-edit mr-2"></i>
-          <span>計画を作成</span>
-          <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-        </a>
-        <ul class="submenu" id="create-plan-submenu">
-          <!-- 収益計画へのリンク -->
-          <li class="sidebar-subitem">
-            <a href="{{ url_for('revenue_plan.index') }}" class="sidebar-sublink">
-              <i class="fas fa-chart-line mr-2"></i>
-              収益計画
-            </a>
-          </li>
-
-          <!-- XXX年度事業計画 -->
-          <li class="sidebar-subitem">
-            <a href="#" class="sidebar-sublink has-submenu" data-submenu="create-annual-plan">
-              <span>2023年度事業計画</span>
-              <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-            </a>
-            <ul class="sub-submenu" id="create-annual-plan-submenu">
-              <li>
-                <a href="#" class="sidebar-sub-sublink has-submenu" data-submenu="create-pl">損益計算書計画</a>
-                <ul class="sub-sub-submenu" id="create-pl-submenu">
-                  <li><a href="{{ url_for('revenue_plan.index') }}" class="sidebar-sub-sub-sublink">収益計画</a></li>
-                  <li><a href="#" class="sidebar-sub-sub-sublink">費用計画</a></li>
+<div class="sidebar bg-gray-800 text-white">
+    <div class="p-4 border-b border-gray-700">
+        <h1 class="text-lg font-bold">経営管理システム</h1>
+    </div>
+    <nav class="mt-4">
+        <ul class="space-y-2 px-2">
+            <li>
+                <a href="{{ url_for('main.dashboard') }}" class="sidebar-link {% if request.endpoint == 'main.dashboard' %}bg-gray-700{% endif %}">
+                    <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
+                </a>
+            </li>
+            
+            <!-- 計画作成メニュー -->
+            <li>
+                <a href="#" class="sidebar-link has-submenu" data-submenu="planning">
+                    <div class="flex justify-between w-full">
+                        <div>
+                            <i class="fas fa-chart-line mr-2"></i>計画作成
+                        </div>
+                        <i class="fas fa-chevron-down text-xs submenu-arrow"></i>
+                    </div>
+                </a>
+                <ul id="planning-submenu" class="submenu {% if 'business-setting' in request.path or 'service-setting' in request.path or 'customer-setting' in request.path or 'revenue-plan' in request.path %}active{% endif %}">
+                    <li>
+                        <a href="#" class="sidebar-sublink has-submenu" data-submenu="revenue">
+                            <div class="flex justify-between w-full">
+                                <div>
+                                    <i class="fas fa-file-invoice-dollar mr-2"></i>収益計画を作成
+                                </div>
+                                <i class="fas fa-chevron-down text-xs submenu-arrow"></i>
+                            </div>
+                        </a>
+                        <ul id="revenue-submenu" class="sub-submenu {% if 'business-setting' in request.path or 'service-setting' in request.path or 'customer-setting' in request.path or 'revenue-plan' in request.path %}active{% endif %}">
+                            <li>
+                                <a href="{{ url_for('main.revenue_plan') }}" class="sidebar-sub-sublink {% if 'revenue-plan' in request.path %}bg-gray-700{% endif %}">
+                                    <i class="fas fa-chart-bar mr-2"></i>収益計画
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url_for('main.business_setting') }}" class="sidebar-sub-sublink {% if 'business-setting' in request.path %}bg-gray-700{% endif %}">
+                                    <i class="fas fa-building mr-2"></i>事業設定
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url_for('main.service_setting') }}" class="sidebar-sub-sublink {% if 'service-setting' in request.path %}bg-gray-700{% endif %}">
+                                    <i class="fas fa-box mr-2"></i>サービス設定
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url_for('main.customer_setting') }}" class="sidebar-sub-sublink {% if 'customer-setting' in request.path %}bg-gray-700{% endif %}">
+                                    <i class="fas fa-users mr-2"></i>顧客設定
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-sublink">
+                            <i class="fas fa-money-bill-wave mr-2"></i>費用計画を作成
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-sublink">
+                            <i class="fas fa-coins mr-2"></i>資金繰りを作成
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-sublink">
+                            <i class="fas fa-university mr-2"></i>資本政策を作成
+                        </a>
+                    </li>
                 </ul>
-              </li>
-              <li><a href="#" class="sidebar-sub-sublink">貸借対照表計画</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">資金繰り表計画</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">資本政策</a></li>
-              <li><a href="#" class="sidebar-sub-sublink">借入返済</a></li>
-            </ul>
-          </li>
-
-          <!-- 中期経営計画 -->
-          <li class="sidebar-subitem">
-            <a href="#" class="sidebar-sublink">中期経営計画</a>
-          </li>
+            </li>
+            
+            <!-- その他のメニュー項目 -->
+            <li>
+                <a href="#" class="sidebar-link">
+                    <i class="fas fa-tasks mr-2"></i>タスク管理
+                </a>
+            </li>
+            <li>
+                <a href="#" class="sidebar-link">
+                    <i class="fas fa-file-alt mr-2"></i>レポート
+                </a>
+            </li>
+            <li>
+                <a href="#" class="sidebar-link">
+                    <i class="fas fa-cog mr-2"></i>設定
+                </a>
+            </li>
         </ul>
-      </li>
-
-      <!-- 実績を入力 -->
-      <li class="sidebar-item">
-        <a href="#" class="sidebar-link has-submenu" data-submenu="input-actual">
-          <i class="fas fa-keyboard mr-2"></i>
-          <span>実績を入力</span>
-          <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-        </a>
-        <ul class="submenu" id="input-actual-submenu">
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">損益計算書</a></li>
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">貸借対照表</a></li>
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">口座残高入力</a></li>
-        </ul>
-      </li>
-
-      <!-- 各種設定 -->
-      <li class="sidebar-item">
-        <a href="#" class="sidebar-link has-submenu" data-submenu="settings">
-          <i class="fas fa-cog mr-2"></i>
-          <span>各種設定</span>
-          <i class="fas fa-chevron-down ml-auto submenu-arrow"></i>
-        </a>
-        <ul class="submenu" id="settings-submenu">
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">企業情報設定</a></li>
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">ユーザー設定</a></li>
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">勘定科目設定</a></li>
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">タグ設定</a></li>
-          <li class="sidebar-subitem"><a href="#" class="sidebar-sublink">税区分設定</a></li>
-        </ul>
-      </li>
-
-      <!-- 収益計画のリンク -->
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">収益計画</h3>
-        <div class="sidebar-links">
-          <a href="{{ url_for('revenue_plan.index') }}" class="sidebar-link">
-            収益計画メイン
-          </a>
-          <a href="{{ url_for('revenue_plan.business_settings') }}" class="sidebar-link">
-            事業設定
-          </a>
-          <a href="{{ url_for('revenue_plan.revenue_input') }}" class="sidebar-link">
-            売上計画入力
-          </a>
-        </div>
-      </div>
-    </ul>
-  </nav>
+    </nav>
 </div>

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}収益計画 | 経営管理システム{% endblock %}
+
+{% block page_title %}収益計画{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-6">収益計画</h2>
+        <p class="mb-6">事業ごとの収益計画を作成・管理できます。</p>
+        
+        <div class="mb-6">
+            <p class="text-gray-700">本画面は、以下の手順で収益計画を作成します：</p>
+            <ol class="list-decimal pl-6 mt-2 space-y-1">
+                <li><a href="{{ url_for('main.business_setting') }}" class="text-blue-600 hover:underline">事業設定</a> で事業を登録</li>
+                <li><a href="{{ url_for('main.service_setting') }}" class="text-blue-600 hover:underline">サービス設定</a> でサービスを登録</li>
+                <li><a href="{{ url_for('main.customer_setting') }}" class="text-blue-600 hover:underline">顧客設定</a> で顧客を登録</li>
+                <li>収益計画シートで月別の販売数を入力</li>
+            </ol>
+        </div>
+        
+        <div class="border-t pt-4">
+            <h3 class="text-lg font-bold mb-4">事業選択</h3>
+            <div class="flex mb-4">
+                <select id="business-selector" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">-- 事業を選択してください --</option>
+                    <!-- ここに登録済み事業が動的に追加される -->
+                </select>
+                <button id="load-plan-btn" class="ml-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    表示
+                </button>
+            </div>
+            
+            <div id="revenue-plan-area" class="hidden">
+                <div class="mb-4">
+                    <h4 class="text-md font-bold mb-2">年度</h4>
+                    <select id="year-selector" class="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="2025">2025年</option>
+                        <option value="2024">2024年</option>
+                        <option value="2023">2023年</option>
+                    </select>
+                </div>
+                
+                <div id="revenue-plan-table-area" class="overflow-x-auto">
+                    <p class="text-gray-500">事業を選択すると、収益計画シートが表示されます。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const businessSelector = document.getElementById('business-selector');
+        const loadPlanBtn = document.getElementById('load-plan-btn');
+        const revenuePlanArea = document.getElementById('revenue-plan-area');
+        
+        if (loadPlanBtn) {
+            loadPlanBtn.addEventListener('click', function() {
+                if (!businessSelector.value) {
+                    alert('事業を選択してください');
+                    return;
+                }
+                
+                revenuePlanArea.classList.remove('hidden');
+                
+                // APIを呼び出す（まだ実装はこれから）
+                console.log('事業ID:', businessSelector.value);
+                alert('この機能は次のステップで実装します。');
+            });
+        }
+    });
+</script>
+{% endblock %} 

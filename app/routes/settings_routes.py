@@ -6,6 +6,7 @@ bp = Blueprint('settings', __name__, url_prefix='/settings')
 @bp.route('/')
 @login_required
 def index():
+    """設定画面のインデックスページ"""
     return render_template('settings/index.html')
 
 @bp.route('/profile')

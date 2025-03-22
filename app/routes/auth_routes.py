@@ -7,6 +7,8 @@ import secrets
 from datetime import datetime, timedelta
 from app.forms.auth_forms import LoginForm, RegistrationForm
 from werkzeug.urls import url_parse
+from werkzeug.security import check_password_hash
+from flask import session
 
 # Blueprintの定義
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -42,24 +44,35 @@ def index():
 # POSTの場合はログイン処理、GETの場合はログイン画面表示
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
-    
-    form = LoginForm()
-    if form.validate_on_submit():
-        # デバッグ用のログ出力
-        print(f"Login attempt with email: {form.email.data}")
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
         
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and user.check_password(form.password.data):
-            login_user(user)
-            print(f"Login successful for user: {user.email}")  # デバッグ用
+        # ユーザー認証のロジック
+        user = User.query.filter_by(email=email).first()
+        
+        if user and check_password_hash(user.password_hash, password):
+            # ログイン成功
+            login_user(user, remember=True)
+            
+            # ここでセッションを明示的に保存
+            session.permanent = True
+            
+            # JSONリクエストの場合は、JSONレスポンスを返す
+            if request.headers.get('Content-Type') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'redirect': url_for('main.dashboard')})
+            
+            # 通常のフォーム送信の場合は直接リダイレクト
             return redirect(url_for('main.dashboard'))
-        
-        flash('メールアドレスまたはパスワードが正しくありません', 'error')
-        print("Login failed")  # デバッグ用
-    
-    return render_template('auth/login.html', form=form)
+        else:
+            # ログイン失敗
+            if request.headers.get('Content-Type') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': 'メールアドレスまたはパスワードが正しくありません。'})
+            
+            flash('メールアドレスまたはパスワードが正しくありません。', 'error')
+            
+    # GETリクエスト時はログインページを表示
+    return render_template('auth/login.html')
 
 # ==========================================================
 # アカウント管理機能
@@ -84,13 +97,22 @@ def signup():
             email = request.form.get('email')
             password = request.form.get('password')
             
+            # 基本的なバリデーション
+            if not email or not password:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'message': 'メールアドレスとパスワードは必須です。'})
+                flash('メールアドレスとパスワードは必須です。', 'error')
+                return render_template('auth/signup.html')
+            
             # メールアドレスの重複チェック
             if User.query.filter_by(email=email).first():
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'message': 'このメールアドレスは既に登録されています。'})
                 flash('このメールアドレスは既に登録されています。', 'error')
                 return render_template('auth/signup.html')
             
             # 新規ユーザーの作成
-            user = User(username=username, email=email)
+            user = User(username=username or email.split('@')[0], email=email)
             user.set_password(password)
             
             db.session.add(user)
@@ -98,10 +120,26 @@ def signup():
             
             # 登録完了後の自動ログイン
             login_user(user)
+            
+            # JSONリクエストの場合は、JSONレスポンスを返す
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True, 
+                    'redirect': url_for('main.dashboard'),
+                    'message': 'アカウントが正常に作成されました。'
+                })
+            
+            # 通常のフォーム送信の場合は直接リダイレクト
             return redirect(url_for('main.dashboard'))
             
         except Exception as e:
             db.session.rollback()
+            # エラーをログに記録
+            current_app.logger.error(f'Signup error: {str(e)}')
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': '登録中にエラーが発生しました。', 'error': str(e)})
+            
             flash('登録中にエラーが発生しました。', 'error')
             
     return render_template('auth/signup.html')

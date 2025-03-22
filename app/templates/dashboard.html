@@ -16,267 +16,82 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex">
-    <!-- サイドバー -->
-    <div class="w-64 bg-white shadow-md h-screen">
-        <div class="p-4">
-            <h3 class="font-bold text-lg mb-4">メニュー</h3>
-            <ul class="space-y-2">
-                <li>
-                    <a href="{{ url_for('main.dashboard') }}" class="block py-2 px-4 bg-blue-100 text-blue-700 rounded font-medium">
-                        <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
-                        <i class="fas fa-project-diagram mr-2"></i>事業計画
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
-                        <i class="fas fa-chart-line mr-2"></i>収益計画
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
-                        <i class="fas fa-tasks mr-2"></i>タスク管理
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
-                        <i class="fas fa-file-alt mr-2"></i>レポート
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 rounded">
-                        <i class="fas fa-cog mr-2"></i>設定
-                    </a>
-                </li>
-            </ul>
+<div class="container mx-auto px-4 py-8">
+    <!-- 日付・時刻・励ましの言葉 -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <p id="current-date" class="text-2xl font-bold text-gray-800"></p>
+                <p id="current-time" class="text-xl text-gray-600"></p>
+            </div>
+            <p id="encouragement-message" class="text-lg text-indigo-600 italic"></p>
         </div>
     </div>
 
-    <!-- メインコンテンツ -->
-    <div class="flex-1 p-8 overflow-y-auto">
-        <!-- 日付・時刻・励ましの言葉 -->
-        <div class="bg-white rounded-lg shadow p-6 mb-8">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h2 id="current-date" class="text-2xl font-bold text-gray-800"></h2>
-                    <p id="current-time" class="text-xl text-gray-600"></p>
+    <!-- KPIカード -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {% for key, data in kpi_data.items() %}
+        <a href="{{ data.url }}" class="block">
+            <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+                <h3 class="text-lg font-semibold text-gray-700">{{ data.title }}</h3>
+                <p class="text-3xl font-bold text-gray-900 mt-2">
+                    {{ data.value|format_number }}
+                    <span class="text-sm text-gray-500">{{ data.unit }}</span>
+                </p>
+                {% if data.progress is defined %}
+                <div class="mt-2">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ data.progress }}%"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">進捗率: {{ data.progress }}%</p>
                 </div>
-                <div>
-                    <p id="encouragement-message" class="text-lg text-blue-600 italic"></p>
-                </div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- グラフエリア -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- 売上推移グラフ -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">売上・利益推移</h3>
+            <div class="h-80">
+                <canvas id="revenueChart"></canvas>
             </div>
         </div>
-
-        <!-- KPI概要 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <!-- 売上進捗 -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-2">売上進捗</h3>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-600">計画</span>
-                    <span class="font-bold">¥10,000,000</span>
-                </div>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-600">実績</span>
-                    <span class="font-bold">¥8,500,000</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 85%"></div>
-                </div>
-                <div class="flex justify-end mt-2">
-                    <span class="text-blue-600 font-bold">85%</span>
-                </div>
-            </div>
-            
-            <!-- 利益進捗 -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-2">利益進捗</h3>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-600">計画</span>
-                    <span class="font-bold">¥3,000,000</span>
-                </div>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-600">実績</span>
-                    <span class="font-bold">¥2,400,000</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                    <div class="bg-green-600 h-2.5 rounded-full" style="width: 80%"></div>
-                </div>
-                <div class="flex justify-end mt-2">
-                    <span class="text-green-600 font-bold">80%</span>
-                </div>
-            </div>
-            
-            <!-- 資金残高 -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-2">資金残高</h3>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-600">当月残高</span>
-                    <span class="font-bold">¥15,500,000</span>
-                </div>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-600">前月比</span>
-                    <span class="font-bold text-green-600">+¥1,200,000</span>
-                </div>
-                <div class="text-xs text-gray-500 mt-4">
-                    <p>次回支払予定: 2025年4月5日</p>
-                    <p>予定金額: ¥2,300,000</p>
-                </div>
+        
+        <!-- 費用内訳グラフ -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">費用内訳</h3>
+            <div class="h-80">
+                <canvas id="expenseChart"></canvas>
             </div>
         </div>
+    </div>
 
-        <!-- メインコンテンツエリア -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- 左カラム: 今日の業務相談、よく使うページ -->
-            <div class="space-y-8">
-                <!-- 今日の業務相談（タスク管理） -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">今日の業務相談</h3>
-                    <ul class="space-y-3">
-                        <li class="flex items-center">
-                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
-                            <span class="flex-1">営業会議の準備資料作成</span>
-                            <span class="text-red-500 text-sm">今日まで</span>
-                        </li>
-                        <li class="flex items-center">
-                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
-                            <span class="flex-1">月次報告書の作成</span>
-                            <span class="text-orange-500 text-sm">明日まで</span>
-                        </li>
-                        <li class="flex items-center">
-                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
-                            <span class="flex-1">新規顧客へのフォローアップ</span>
-                            <span class="text-gray-500 text-sm">3/25まで</span>
-                        </li>
-                        <li class="flex items-center">
-                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 mr-2">
-                            <span class="flex-1">プロジェクト計画の見直し</span>
-                            <span class="text-gray-500 text-sm">3/28まで</span>
-                        </li>
-                    </ul>
-                    <button class="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
-                        <i class="fas fa-plus mr-1"></i> タスクを追加
-                    </button>
-                </div>
-                
-                <!-- よく使うページ -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">よく使うページ</h3>
-                    <ul class="space-y-2">
-                        <li>
-                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
-                                <i class="fas fa-chart-bar text-blue-500 mr-2"></i>
-                                <span>月次レポート</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
-                                <i class="fas fa-money-bill-wave text-green-500 mr-2"></i>
-                                <span>キャッシュフロー</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
-                                <i class="fas fa-users text-purple-500 mr-2"></i>
-                                <span>顧客リスト</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded">
-                                <i class="fas fa-project-diagram text-orange-500 mr-2"></i>
-                                <span>プロジェクトタイムライン</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+    <!-- タスクと戦略メモエリア -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- 今日の業務相談 -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">今日の業務相談</h3>
+            <div class="space-y-4" id="taskList">
+                <!-- タスクリストはJavaScriptで動的に生成 -->
             </div>
-            
-            <!-- 中央カラム: 月次売上推移、費用内訳 -->
-            <div class="space-y-8">
-                <!-- 月次売上推移 -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">月次売上推移</h3>
-                    <div class="h-64">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                </div>
-                
-                <!-- 費用内訳 -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">費用内訳</h3>
-                    <div class="h-64">
-                        <canvas id="expenseChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 右カラム: 経営戦略壁打ち、レポート作成 -->
-            <div class="space-y-8">
-                <!-- 経営戦略壁打ち -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">経営戦略壁打ち</h3>
-                    <div class="space-y-3">
-                        <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
-                            <p class="text-gray-700">新規事業展開について営業部と製品開発部で協議する</p>
-                            <p class="text-xs text-gray-500 mt-1">2025/3/15 追加</p>
-                        </div>
-                        <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
-                            <p class="text-gray-700">Q2からの価格戦略の見直しが必要</p>
-                            <p class="text-xs text-gray-500 mt-1">2025/3/12 追加</p>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <textarea class="w-full border border-gray-300 rounded p-2" rows="2" placeholder="新しいメモを追加..."></textarea>
-                        <button class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">保存</button>
-                    </div>
-                </div>
-                
-                <!-- レポート作成 -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">レポート作成</h3>
-                    <ul class="space-y-2">
-                        <li>
-                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                                <div class="flex items-center">
-                                    <i class="fas fa-file-alt text-blue-500 mr-2"></i>
-                                    <span>月次レポート</span>
-                                </div>
-                                <i class="fas fa-chevron-right text-gray-400"></i>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                                <div class="flex items-center">
-                                    <i class="fas fa-file-alt text-green-500 mr-2"></i>
-                                    <span>四半期レポート</span>
-                                </div>
-                                <i class="fas fa-chevron-right text-gray-400"></i>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                                <div class="flex items-center">
-                                    <i class="fas fa-file-alt text-purple-500 mr-2"></i>
-                                    <span>営業活動レポート</span>
-                                </div>
-                                <i class="fas fa-chevron-right text-gray-400"></i>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                                <div class="flex items-center">
-                                    <i class="fas fa-file-alt text-orange-500 mr-2"></i>
-                                    <span>カスタムレポート</span>
-                                </div>
-                                <i class="fas fa-chevron-right text-gray-400"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+            <button id="addTaskBtn" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <i class="fas fa-plus mr-2"></i>タスクを追加
+            </button>
+        </div>
+
+        <!-- 経営戦略壁打ち -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">経営戦略壁打ち</h3>
+            <div class="space-y-4">
+                <textarea id="strategyMemo" class="w-full h-40 p-2 border rounded-lg" 
+                          placeholder="経営戦略や重要なメモを入力してください..."></textarea>
+                <button id="saveStrategyBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    <i class="fas fa-save mr-2"></i>保存
+                </button>
             </div>
         </div>
     </div>

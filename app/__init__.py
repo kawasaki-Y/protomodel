@@ -2,11 +2,9 @@
 # このファイルはappディレクトリをPythonパッケージとして認識させるために必要です 
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
 from config import Config
-from datetime import datetime
-from app.extensions import db, login_manager
+from app.extensions import db, login_manager, migrate
+from flask_login import current_user
 import os
 
 def format_number(value):
@@ -39,49 +37,62 @@ def format_datetime(value):
     except:
         return str(value)
 
-def create_app():
+def create_app(config_class=Config):
     """
     アプリケーションファクトリー
     
     Flaskアプリケーションを初期化し、必要な設定と拡張機能を登録する
     """
     app = Flask(__name__)
-    
-    # 設定の読み込み
-    app.config.update(
-        SECRET_KEY='your-secret-key',
-        SQLALCHEMY_DATABASE_URI='sqlite:///app.db',
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        DEBUG=True
-    )
+    app.config.from_object(config_class)
     
     # 拡張機能の初期化
     db.init_app(app)
-    
-    with app.app_context():
-        # データベースのテーブルを作成
-        db.create_all()
-    
-    # LoginManagerの設定
+    migrate.init_app(app, db)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'ログインが必要です。'
     
-    # user_loaderの設定
     @login_manager.user_loader
     def load_user(user_id):
         from app.models.user import User
         return User.query.get(int(user_id))
     
     # Blueprintの登録
-    from .routes import main_routes, auth_routes, revenue_plan_routes, settings_routes
-    app.register_blueprint(main_routes.bp)
-    app.register_blueprint(auth_routes.bp)
-    app.register_blueprint(revenue_plan_routes.bp)
-    app.register_blueprint(settings_routes.bp)
+    from app.routes.main_routes import bp as main_bp
+    app.register_blueprint(main_bp)
+    
+    from app.routes.auth_routes import bp as auth_bp
+    app.register_blueprint(auth_bp)
+    
+    from app.routes.business_routes import bp as business_bp
+    app.register_blueprint(business_bp)
+    
+    # 設定ルートを登録
+    from app.routes.settings_routes import bp as settings_bp
+    app.register_blueprint(settings_bp)
+    
+    # 静的ファイルのルートを登録
+    from app.routes.static_routes import bp as static_bp
+    app.register_blueprint(static_bp)
+    
+    # アプリケーションコンテキスト内でモデルを初期化
+    with app.app_context():
+        from app.models.user import User
+        from app.models.business import RevenueBusiness, Service, Customer
+        from app.models.revenue_plan import RevenuePlan, RevenuePlanDetail
+        
+        # データベースの作成
+        db.create_all()
     
     # テンプレートフィルターの登録
     app.jinja_env.filters['format_number'] = format_number
     app.jinja_env.filters['format_datetime'] = format_datetime
+    
+    # 静的ファイルの初期設定
+    from app.utils.image_setup import setup_default_avatar
+    setup_default_avatar()
+    
+    # ロギング設定
+    from app.utils.logging import setup_logging
+    setup_logging(app)
     
     return app 

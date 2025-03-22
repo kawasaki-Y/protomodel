@@ -3,7 +3,7 @@ from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
-class User(UserMixin, db.Model):
+class User(db.Model, UserMixin):
     """
     ユーザーモデル
     
@@ -12,16 +12,18 @@ class User(UserMixin, db.Model):
     """
     
     __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}
 
     # 基本情報
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False, index=True)  # ユーザー名（ログイン時に使用）
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)    # メールアドレス
-    password_hash = db.Column(db.String(128))                         # ハッシュ化されたパスワード
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)      # アカウント作成日時
+    username = db.Column(db.String(80), nullable=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # リレーションシップ
-    revenue_businesses = db.relationship('RevenueBusiness', backref='user', lazy=True)
+    # リレーションシップを完全修飾パスで定義
+    revenue_businesses = db.relationship('app.models.business.RevenueBusiness', backref='user', lazy=True)
 
     # パスワードのハッシュ化と検証用メソッド
     def set_password(self, password):
@@ -47,4 +49,4 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         """デバッグ用の文字列表現"""
-        return f'<User {self.username}>' 
+        return f'<User {self.email}>' 

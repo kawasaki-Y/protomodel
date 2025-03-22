@@ -5,6 +5,41 @@
 
 // DOMが読み込まれたら実行
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('dashboard.js loaded');
+    
+    // 日付と時刻の更新
+    function updateDateTime() {
+        const now = new Date();
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        
+        document.getElementById('current-date').textContent = now.toLocaleDateString('ja-JP', dateOptions);
+        document.getElementById('current-time').textContent = now.toLocaleTimeString('ja-JP', timeOptions);
+    }
+    
+    // 励ましのメッセージ
+    const encouragementMessages = [
+        "今日も一日頑張りましょう！",
+        "小さな進歩も大切な一歩です",
+        "チームで協力して目標達成を目指しましょう",
+        "困難は成長の機会です",
+        "計画を立てて着実に前進しましょう",
+        "今月の目標達成まであと少しです！",
+        "新しいアイデアが会社を成長させます",
+        "今日の努力が明日の成果につながります"
+    ];
+    
+    function setRandomEncouragement() {
+        const randomIndex = Math.floor(Math.random() * encouragementMessages.length);
+        document.getElementById('encouragement-message').textContent = encouragementMessages[randomIndex];
+    }
+    
+    // 初期更新と定期更新の設定
+    updateDateTime();
+    setRandomEncouragement();
+    setInterval(updateDateTime, 1000);
+    setInterval(setRandomEncouragement, 3600000); // 1時間ごとに更新
+
     // グラフデータを取得して描画
     loadAndRenderCharts();
     
@@ -19,6 +54,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (exportPptBtn) {
         exportPptBtn.addEventListener('click', exportPpt);
     }
+    
+    // サイドバーメニューの状態を初期化
+    initializeSidebar();
 });
 
 /**
@@ -297,5 +335,30 @@ function exportPpt() {
     .catch(error => {
         console.error('エラー:', error);
         alert('PowerPoint出力中にエラーが発生しました');
+    });
+}
+
+// サイドバーメニューの状態を初期化
+function initializeSidebar() {
+    // サイドバーメニューのトグル
+    document.querySelectorAll('.sidebar-dropdown-toggle').forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const menu = this.nextElementSibling;
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+        });
+    });
+    
+    // サブメニューのトグル
+    document.querySelectorAll('.sidebar-submenu-toggle').forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const submenu = this.nextElementSibling;
+            if (submenu) {
+                submenu.classList.toggle('hidden');
+            }
+        });
     });
 } 
