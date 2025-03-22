@@ -1,59 +1,77 @@
 {% extends "base.html" %}
 
-{% block title %}収益計画シート | 経営管理システム{% endblock %}
+{% block title %}収益計画 | 経営管理システム{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.revenue-table th, .revenue-table td {
+    min-width: 120px;
+}
+.revenue-table input {
+    width: 100%;
+    padding: 0.25rem;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
-        <h1 class="text-2xl font-bold mb-4">収益計画シート</h1>
+        <h1 class="text-2xl font-bold mb-4">収益計画</h1>
         <p class="text-gray-600">事業ごとの収益計画を作成・管理します。</p>
     </div>
 
-    <!-- 事業選択 -->
-    <div class="bg-white rounded-lg shadow p-6 mb-8">
-        <div class="flex items-center space-x-4">
-            <label for="selected_business" class="text-sm font-medium text-gray-700">事業選択:</label>
-            <select id="selected_business" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+    <!-- 事業選択タブ -->
+    <div class="mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                 {% for business in businesses %}
-                <option value="{{ business.id }}">{{ business.name }}</option>
+                <button class="business-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        data-business-id="{{ business.id }}"
+                        onclick="switchBusiness({{ business.id }})">
+                    {{ business.name }}
+                </button>
                 {% endfor %}
-            </select>
-            <button onclick="loadRevenuePlan()" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                表示
-            </button>
+            </nav>
         </div>
     </div>
 
-    <!-- 収益計画表 -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="p-6">
-            <div class="overflow-x-auto">
-                <table id="revenue-table" class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">顧客/サービス</th>
-                            <!-- 月別の列はJavaScriptで動的に生成 -->
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <!-- テーブルの内容はJavaScriptで動的に生成 -->
-                    </tbody>
-                    <tfoot class="bg-gray-50">
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap font-bold">合計</td>
-                            <!-- 合計行はJavaScriptで動的に生成 -->
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
+    <!-- 収益計画テーブル -->
+    <div class="bg-white rounded-lg shadow overflow-x-auto">
+        <table id="revenue-table" class="min-w-full divide-y divide-gray-200 revenue-table">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">顧客</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">単価</th>
+                    {% for month in range(1, 13) %}
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ month }}月
+                    </th>
+                    {% endfor %}
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合計</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <!-- JavaScriptで動的に生成 -->
+            </tbody>
+            <tfoot class="bg-gray-50">
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap font-bold">合計</td>
+                    <td></td>
+                    {% for month in range(1, 13) %}
+                    <td class="px-6 py-4 whitespace-nowrap font-bold month-total" data-month="{{ month }}">0</td>
+                    {% endfor %}
+                    <td class="px-6 py-4 whitespace-nowrap font-bold grand-total">0</td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
 
     <!-- 保存ボタン -->
     <div class="mt-8 flex justify-end">
         <button onclick="saveRevenuePlan()" 
-                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             <i class="fas fa-save mr-2"></i>保存
         </button>
     </div>
@@ -62,211 +80,5 @@
 
 {% block scripts %}
 {{ super() }}
-<script>
-// 月次データの範囲（12ヶ月分）
-const months = Array.from({length: 12}, (_, i) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() + i);
-    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short' });
-});
-
-// 収益計画データの読み込み
-async function loadRevenuePlan() {
-    const businessId = document.getElementById('selected_business').value;
-    try {
-        const response = await fetch(`/api/revenue-plan/${businessId}`);
-        const data = await response.json();
-        renderRevenuePlan(data);
-    } catch (error) {
-        console.error('収益計画の読み込みに失敗しました:', error);
-        alert('データの読み込みに失敗しました。');
-    }
-}
-
-// 収益計画表の描画
-function renderRevenuePlan(data) {
-    const table = document.getElementById('revenue-table');
-    const thead = table.querySelector('thead tr');
-    const tbody = table.querySelector('tbody');
-    const tfoot = table.querySelector('tfoot tr');
-
-    // ヘッダーの生成
-    thead.innerHTML = '<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">顧客/サービス</th>';
-    months.forEach(month => {
-        thead.innerHTML += `
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ${month}
-            </th>
-        `;
-    });
-
-    // 本体の生成
-    tbody.innerHTML = '';
-    data.customers.forEach(customer => {
-        data.services.forEach(service => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap flex items-center space-x-2">
-                    <span>${customer.name} / ${service.name}</span>
-                    <button onclick="toggleEditMode(this.closest('tr'))"
-                            class="text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="confirmDeleteRow(${customer.id}, ${service.id})"
-                            class="text-red-600 hover:text-red-800">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            `;
-            months.forEach((_, i) => {
-                const value = data.values?.[customer.id]?.[service.id]?.[i] || 0;
-                row.innerHTML += `
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <input type="number" 
-                               class="revenue-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                               data-customer="${customer.id}"
-                               data-service="${service.id}"
-                               data-month="${i}"
-                               value="${value}"
-                               onchange="if(validateInput(this)) calculateTotal()"
-                               min="0">
-                    </td>
-                `;
-            });
-            tbody.appendChild(row);
-        });
-    });
-
-    calculateTotal();
-}
-
-// 合計の計算
-function calculateTotal() {
-    const inputs = document.querySelectorAll('.revenue-input');
-    const totals = Array(12).fill(0);
-
-    inputs.forEach(input => {
-        const month = parseInt(input.dataset.month);
-        const value = parseFloat(input.value) || 0;
-        totals[month] += value;
-    });
-
-    const tfoot = document.querySelector('#revenue-table tfoot tr');
-    tfoot.innerHTML = '<td class="px-6 py-4 whitespace-nowrap font-bold">合計</td>';
-    totals.forEach(total => {
-        tfoot.innerHTML += `
-            <td class="px-6 py-4 whitespace-nowrap font-bold">
-                ${total.toLocaleString()}円
-            </td>
-        `;
-    });
-}
-
-// 収益計画の保存
-async function saveRevenuePlan() {
-    const businessId = document.getElementById('selected_business').value;
-    const inputs = document.querySelectorAll('.revenue-input');
-    const data = {
-        business_id: businessId,
-        values: {}
-    };
-
-    inputs.forEach(input => {
-        const { customer, service, month } = input.dataset;
-        if (!data.values[customer]) data.values[customer] = {};
-        if (!data.values[customer][service]) data.values[customer][service] = {};
-        data.values[customer][service][month] = parseFloat(input.value) || 0;
-    });
-
-    try {
-        const response = await fetch('/api/revenue-plan', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (response.ok) {
-            alert('収益計画を保存しました。');
-        } else {
-            throw new Error('保存に失敗しました。');
-        }
-    } catch (error) {
-        console.error('収益計画の保存に失敗しました:', error);
-        alert('保存に失敗しました。');
-    }
-}
-
-// 行の編集モード切り替え
-function toggleEditMode(row) {
-    const inputs = row.querySelectorAll('.revenue-input');
-    inputs.forEach(input => {
-        input.readOnly = !input.readOnly;
-        input.classList.toggle('bg-gray-100');
-    });
-}
-
-// 行の削除確認
-function confirmDeleteRow(customerId, serviceId) {
-    if (confirm('この行を削除してもよろしいですか？')) {
-        deleteRow(customerId, serviceId);
-    }
-}
-
-// 行の削除処理
-async function deleteRow(customerId, serviceId) {
-    const businessId = document.getElementById('selected_business').value;
-    try {
-        const response = await fetch('/api/revenue-plan/delete-row', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                business_id: businessId,
-                customer_id: customerId,
-                service_id: serviceId
-            })
-        });
-
-        if (response.ok) {
-            loadRevenuePlan(); // テーブルを再読み込み
-            showNotification('行を削除しました', 'success');
-        } else {
-            throw new Error('削除に失敗しました');
-        }
-    } catch (error) {
-        console.error('行の削除に失敗しました:', error);
-        showNotification('削除に失敗しました', 'error');
-    }
-}
-
-// 通知表示
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
-        type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } text-white`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
-}
-
-// 入力値のバリデーション
-function validateInput(input) {
-    const value = parseFloat(input.value);
-    if (isNaN(value) || value < 0) {
-        input.value = 0;
-        showNotification('無効な値が入力されました', 'error');
-        return false;
-    }
-    return true;
-}
-
-// 初期表示
-document.addEventListener('DOMContentLoaded', () => {
-    loadRevenuePlan();
-});
-</script>
+<script src="{{ url_for('static', filename='js/revenue_plan.js') }}"></script>
 {% endblock %} 
