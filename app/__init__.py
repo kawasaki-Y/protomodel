@@ -2,10 +2,12 @@
 # このファイルはappディレクトリをPythonパッケージとして認識させるために必要です 
 
 from flask import Flask
-from config import Config
-from app.extensions import db, login_manager, migrate
+from .config import Config
+from .extensions import db, init_extensions
 from flask_login import current_user
 import os
+from .models.user import User
+from .models.business import RevenueBusiness
 
 def format_number(value):
     """
@@ -46,41 +48,21 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # 拡張機能の初期化
+    # SQLAlchemyの初期化を最初に行う
     db.init_app(app)
-    migrate.init_app(app, db)
-    login_manager.init_app(app)
     
-    @login_manager.user_loader
-    def load_user(user_id):
-        from app.models.user import User
-        return User.query.get(int(user_id))
+    # その他の拡張機能を初期化
+    init_extensions(app)
     
     # Blueprintの登録
-    from app.routes.main_routes import bp as main_bp
-    app.register_blueprint(main_bp)
+    from .routes import main_routes, auth_routes, static_routes, settings_routes
+    app.register_blueprint(main_routes.bp)
+    app.register_blueprint(auth_routes.bp)
+    app.register_blueprint(static_routes.bp)
+    app.register_blueprint(settings_routes.bp)
     
-    from app.routes.auth_routes import bp as auth_bp
-    app.register_blueprint(auth_bp)
-    
-    from app.routes.business_routes import bp as business_bp
-    app.register_blueprint(business_bp)
-    
-    # 設定ルートを登録
-    from app.routes.settings_routes import bp as settings_bp
-    app.register_blueprint(settings_bp)
-    
-    # 静的ファイルのルートを登録
-    from app.routes.static_routes import bp as static_bp
-    app.register_blueprint(static_bp)
-    
-    # アプリケーションコンテキスト内でモデルを初期化
+    # アプリケーションコンテキスト内でデータベースを作成
     with app.app_context():
-        from app.models.user import User
-        from app.models.business import RevenueBusiness, Service, Customer
-        from app.models.revenue_plan import RevenuePlan, RevenuePlanDetail
-        
-        # データベースの作成
         db.create_all()
     
     # テンプレートフィルターの登録

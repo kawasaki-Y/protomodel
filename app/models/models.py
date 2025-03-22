@@ -3,8 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import relationship, backref
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-
-db = SQLAlchemy()
+from app.extensions import db
 
 class BusinessPlan(db.Model):
     """
@@ -214,68 +213,6 @@ class CashFlowItem(db.Model):
         return f'<CashFlowItem {self.name}>'
 
 
-class User(UserMixin, db.Model):
-    """ユーザーモデル"""
-    __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    # 権限管理の拡張
-    # role = db.Column(db.String(20), default='user')  # 'admin', 'manager', 'user', 'viewer'
-    # permissions = db.Column(db.JSON, default=lambda: {
-    #     'create_plan': True,
-    #     'edit_plan': True,
-    #     'delete_plan': False,
-    #     'view_all_plans': False,
-    #     'manage_users': False
-    # })
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # リレーションシップ
-    business_plans = relationship('BusinessPlan', backref='creator', lazy='dynamic')
-    
-    def set_password(self, password):
-        """パスワードをハッシュ化してセットする"""
-        self.password_hash = generate_password_hash(password)
-        
-    def check_password(self, password):
-        """パスワードが正しいか確認する"""
-        return check_password_hash(self.password_hash, password)
-    
-    def has_permission(self, permission):
-        """特定の権限を持っているか確認する"""
-        if self.is_admin:
-            return True
-        
-        # if permission == 'manage_users':
-        #     return False
-            
-        # return self.permissions.get(permission, False)
-        
-        # 簡略版: 管理者以外は基本的な操作のみ許可
-        if permission in ['create_plan', 'edit_plan']:
-            return True
-        return False
-    
-    def get_role_display(self):
-        """ロール名の表示用文字列を取得する"""
-        # roles = {
-        #     'admin': '管理者',
-        #     'manager': 'マネージャー',
-        #     'user': '一般ユーザー',
-        #     'viewer': '閲覧専用'
-        # }
-        # return roles.get(self.role, '不明')
-        if self.is_admin:
-            return '管理者'
-        return '一般ユーザー'
-    
-    def __repr__(self):
-        return f'<User {self.username}>'
 
 
 class ActualData(db.Model):

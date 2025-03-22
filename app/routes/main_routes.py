@@ -128,70 +128,103 @@ def debug_session():
 @login_required
 def business_setting():
     if request.method == 'POST':
-        name = request.form.get('name')
-        description = request.form.get('description')
-        
-        business = RevenueBusiness(
-            name=name,
-            description=description,
-            user_id=current_user.id
-        )
-        db.session.add(business)
-        db.session.commit()
-        
-        flash('事業を登録しました。', 'success')
-        return redirect(url_for('main.business_setting'))
-        
+        try:
+            name = request.form.get('name')
+            
+            if not name:
+                flash('事業名を入力してください。', 'error')
+                return redirect(url_for('main.business_setting'))
+
+            # トランザクションを明示的に開始
+            business = RevenueBusiness(
+                name=name,
+                user_id=current_user.id
+            )
+            
+            try:
+                db.session.add(business)
+                db.session.commit()
+                flash('事業を登録しました。', 'success')
+            except Exception as db_error:
+                db.session.rollback()
+                current_app.logger.error(f"DB操作エラー: {str(db_error)}")
+                flash('事業の登録に失敗しました。', 'error')
+
+            return redirect(url_for('main.business_setting'))
+
+        except Exception as e:
+            current_app.logger.error(f"事業登録中にエラー: {str(e)}")
+            flash('事業の登録に失敗しました。', 'error')
+            return redirect(url_for('main.business_setting'))
+
+    # GET リクエストの場合
     businesses = RevenueBusiness.query.filter_by(user_id=current_user.id).all()
     return render_template('business/setting.html', businesses=businesses)
 
 @bp.route('/service/setting', methods=['GET', 'POST'])
 @login_required
 def service_setting():
-    businesses = RevenueBusiness.query.filter_by(user_id=current_user.id).all()
-    
     if request.method == 'POST':
-        business_id = request.form.get('business_id')
-        name = request.form.get('name')
-        price = request.form.get('price')
-        description = request.form.get('description')
-        
-        service = Service(
-            name=name,
-            price=price,
-            description=description,
-            business_id=business_id
-        )
-        db.session.add(service)
-        db.session.commit()
-        
-        flash('サービスを登録しました。', 'success')
-        return redirect(url_for('main.service_setting'))
-        
-    return render_template('business/service_setting.html', businesses=businesses)
+        try:
+            name = request.form.get('name')
+            
+            if not name:
+                flash('サービス名を入力してください。', 'error')
+                return redirect(url_for('main.service_setting'))
+
+            service = Service(
+                name=name,
+                # 他のフィールドはデフォルト値または空値を使用
+                price=0,  # デフォルト値として0を設定
+                business_id=1  # デフォルトの事業IDを設定
+            )
+            
+            db.session.add(service)
+            db.session.commit()
+
+            flash('サービスを登録しました。', 'success')
+            return redirect(url_for('main.service_setting'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('サービスの登録に失敗しました。', 'error')
+            return redirect(url_for('main.service_setting'))
+
+    # GET リクエストの場合
+    services = Service.query.all()
+    return render_template('business/service_setting.html', services=services)
 
 @bp.route('/customer/setting', methods=['GET', 'POST'])
 @login_required
 def customer_setting():
-    businesses = RevenueBusiness.query.filter_by(user_id=current_user.id).all()
-    
     if request.method == 'POST':
-        business_id = request.form.get('business_id')
-        name = request.form.get('name')
-        price_factor = request.form.get('price_factor', 1.0)
-        
-        customer = Customer(
-            name=name,
-            price_factor=price_factor,
-            business_id=business_id
-        )
-        db.session.add(customer)
-        db.session.commit()
-        
-        flash('顧客を登録しました。', 'success')
-        return redirect(url_for('main.customer_setting'))
-        
-    return render_template('business/customer_setting.html', businesses=businesses)
+        try:
+            name = request.form.get('name')
+            
+            if not name:
+                flash('顧客名を入力してください。', 'error')
+                return redirect(url_for('main.customer_setting'))
+
+            customer = Customer(
+                name=name,
+                price_factor=1.0,  # デフォルト値
+                business_id=1  # デフォルト値
+            )
+            
+            db.session.add(customer)
+            db.session.commit()
+
+            flash('顧客を登録しました。', 'success')
+            return redirect(url_for('main.customer_setting'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('顧客の登録に失敗しました。', 'error')
+            return redirect(url_for('main.customer_setting'))
+
+    # GET リクエストの場合
+    customers = Customer.query.all()
+    return render_template('business/customer_setting.html', customers=customers)
 
 @bp.route('/revenue-plan')
 @login_required

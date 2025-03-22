@@ -3,7 +3,7 @@ from flask_login import login_required
 
 bp = Blueprint('settings', __name__, url_prefix='/settings')
 
-@bp.route('/')
+@bp.route('/settings')
 @login_required
 def index():
     """設定画面のインデックスページ"""

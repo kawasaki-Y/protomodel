@@ -8,7 +8,7 @@
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
         <h1 class="text-2xl font-bold mb-4">顧客設定</h1>
-        <p class="text-gray-600">各事業の顧客情報を登録・管理します。</p>
+        <p class="text-gray-600">顧客情報を登録・管理します。</p>
     </div>
 
     <!-- 顧客登録フォーム -->
@@ -17,24 +17,9 @@
         <form method="POST" action="{{ url_for('main.customer_setting') }}">
             <div class="grid gap-6">
                 <div>
-                    <label for="business_id" class="block text-sm font-medium text-gray-700">事業選択</label>
-                    <select name="business_id" id="business_id" required
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        {% for business in businesses %}
-                        <option value="{{ business.id }}">{{ business.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
                     <label for="name" class="block text-sm font-medium text-gray-700">顧客名</label>
                     <input type="text" name="name" id="name" required
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label for="price_factor" class="block text-sm font-medium text-gray-700">価格調整係数</label>
-                    <input type="number" name="price_factor" id="price_factor" step="0.1" value="1.0"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <p class="mt-1 text-sm text-gray-500">標準価格に対する調整係数（1.0 = 標準価格）</p>
                 </div>
                 <div>
                     <button type="submit" 
@@ -54,22 +39,16 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">事業名</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">顧客名</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">価格調整係数</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録日</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        {% for business in businesses %}
-                            {% for customer in business.customers %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ business.name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ customer.name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ customer.price_factor }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
-                            </tr>
-                            {% endfor %}
+                        {% for customer in customers %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ customer.name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
