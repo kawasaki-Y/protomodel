@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import random
 from flask import session
 
-# Blueprintの定義
+# Blueprintの定義を修正
 bp = Blueprint('main', __name__)
 
 @bp.route('/')
@@ -24,33 +24,27 @@ def home():
 @login_required
 def dashboard():
     """ダッシュボード画面"""
-    # KPIデータの取得
-    kpi_data = {
-        'revenue': {
-            'title': '売上高',
-            'value': calculate_total_revenue(),
-            'unit': '円',
-            'progress': calculate_revenue_progress(),
+    kpi_data = [
+        {
+            'title': '収益計画',
+            'value': '作成',
+            'description': '事業ごとの収益計画を作成・管理',
             'url': url_for('main.revenue_plan')
         },
-        'profit': {
-            'title': '営業利益',
-            'value': calculate_total_profit(),
-            'unit': '円',
-            'progress': calculate_profit_progress(),
-            'url': '#'
+        {
+            'title': '事業設定',
+            'value': '設定',
+            'description': '事業情報の登録・管理',
+            'url': url_for('main.business_setting')
         },
-        'cash': {
-            'title': '資金残高',
-            'value': get_current_cash_balance(),
-            'unit': '円',
-            'url': '#'
+        {
+            'title': '顧客設定',
+            'value': '設定',
+            'description': '顧客情報の登録・管理',
+            'url': url_for('main.customer_setting')
         }
-    }
-    
-    return render_template('dashboard.html', 
-                         kpi_data=kpi_data,
-                         page_title='ダッシュボード')
+    ]
+    return render_template('dashboard.html', kpi_data=kpi_data)
 
 def get_recent_activities():
     """最近の活動を取得"""

@@ -43,24 +43,12 @@
     </div>
 
     <!-- KPIカード -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {% for key, data in kpi_data.items() %}
-        <a href="{{ data.url }}" class="block">
-            <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-                <h3 class="text-lg font-semibold text-gray-700">{{ data.title }}</h3>
-                <p class="text-3xl font-bold text-gray-900 mt-2">
-                    {{ data.value|format_number }}
-                    <span class="text-sm text-gray-500">{{ data.unit }}</span>
-                </p>
-                {% if data.progress is defined %}
-                <div class="mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ data.progress }}%"></div>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-1">進捗率: {{ data.progress }}%</p>
-                </div>
-                {% endif %}
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {% for kpi in kpi_data %}
+        <a href="{{ kpi.url }}" class="block p-6 bg-white rounded-lg shadow hover:bg-gray-50">
+            <h3 class="text-lg font-bold text-gray-900">{{ kpi.title }}</h3>
+            <p class="mt-2 text-3xl font-bold text-blue-600">{{ kpi.value }}</p>
+            <p class="mt-1 text-sm text-gray-500">{{ kpi.description }}</p>
         </a>
         {% endfor %}
     </div>

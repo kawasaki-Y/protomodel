@@ -70,12 +70,12 @@ def create_app(config_class=Config):
     migrate = Migrate()
     migrate.init_app(app, db)
     
-    # Blueprintの登録
-    from .routes import main_routes, auth_routes, static_routes, settings_routes
-    app.register_blueprint(main_routes.bp)
-    app.register_blueprint(auth_routes.bp)
-    app.register_blueprint(static_routes.bp)
-    app.register_blueprint(settings_routes.bp)
+    # Blueprintの登録を修正
+    from .routes import main_bp, auth_bp, static_bp, settings_bp
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(static_bp)
+    app.register_blueprint(settings_bp)
     
     # アプリケーションコンテキスト内でデータベースを作成
     with app.app_context():
