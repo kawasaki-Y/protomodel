@@ -9,16 +9,25 @@ class RevenuePlan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     business_id = db.Column(db.Integer, db.ForeignKey('revenue_businesses.id'), nullable=False)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
-    unit_price = db.Column(db.Integer, default=0)
+    unit_price = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # 月別の数量データはJSONとして保存
     quantities = db.Column(db.JSON, default=dict)
 
-    business = db.relationship('RevenueBusiness', backref='revenue_plans')
-    customer = db.relationship('Customer', backref='revenue_plans')
+    # バックリファレンス名を変更し、back_populatesを使用
+    business = db.relationship('RevenueBusiness', back_populates='plan_refs')
+    # backrefを使用せず、back_populatesを使用して双方向関係を定義
+    customer_ref = db.relationship('Customer', back_populates='revenue_plans')
     
+    # RevenuePlanValueとの関係
+    values = db.relationship(
+        'RevenuePlanValue',
+        back_populates='plan',
+        cascade='all, delete-orphan'
+    )
+
     # リレーションシップの修正
     details = db.relationship(
         'RevenuePlanDetail',
@@ -56,4 +65,24 @@ class RevenuePlanDetail(db.Model):
     )
 
     def __repr__(self):
-        return f'<RevenuePlanDetail {self.id} for plan {self.business_id}>' 
+        return f'<RevenuePlanDetail {self.id} for plan {self.business_id}>'
+
+class RevenuePlanValue(db.Model):
+    __tablename__ = 'revenue_plan_values'
+    __table_args__ = (
+        db.UniqueConstraint('revenue_plan_id', 'month', name='unique_plan_month'),
+        {'extend_existing': True}
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    revenue_plan_id = db.Column(db.Integer, db.ForeignKey('revenue_plans.id'), nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # リレーションシップ
+    plan = db.relationship('RevenuePlan', back_populates='values')
+
+    def __repr__(self):
+        return f'<RevenuePlanValue {self.id} for plan {self.revenue_plan_id}>' 

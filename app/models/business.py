@@ -13,8 +13,11 @@ class RevenueBusiness(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
+    # リレーションシップの定義を修正
+    plan_refs = db.relationship('RevenuePlan', back_populates='business')
     services = db.relationship('Service', backref='business', lazy=True)
-    customers = db.relationship('Customer', backref='business', lazy=True)
+    # customersのbackref名を変更
+    customers = db.relationship('Customer', back_populates='revenue_business', lazy=True)
     
     def __repr__(self):
         return f'<RevenueBusiness {self.name}>'
@@ -42,26 +45,15 @@ class Customer(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    price_factor = db.Column(db.Float, default=1.0)  # 価格調整係数
     business_id = db.Column(db.Integer, db.ForeignKey('revenue_businesses.id'), nullable=False)
+    price_factor = db.Column(db.Float, default=1.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # リレーションシップの定義を修正
+    revenue_business = db.relationship('RevenueBusiness', back_populates='customers')
+    # backrefを使用せず、back_populatesを使用して双方向関係を定義
+    revenue_plans = db.relationship('RevenuePlan', back_populates='customer_ref', lazy=True)
     
     def __repr__(self):
-        return f'<Customer {self.name}>'
-
-class RevenuePlanValue(db.Model):
-    __tablename__ = 'revenue_plan_values'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    business_id = db.Column(db.Integer, db.ForeignKey('revenue_businesses.id'), nullable=False)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
-    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
-    month = db.Column(db.Integer, nullable=False)  # 0-11の値で月を表す
-    value = db.Column(db.Float, default=0.0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    __table_args__ = (
-        db.UniqueConstraint('business_id', 'customer_id', 'service_id', 'month', name='unique_revenue_plan_value'),
-    ) 
+        return f'<Customer {self.name}>' 

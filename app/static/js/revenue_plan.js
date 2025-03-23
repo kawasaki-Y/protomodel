@@ -181,13 +181,16 @@ function updateRowCalculations(row) {
         const quantity = parseFloat(input.value) || 0;
         const amount = unitPrice * quantity;
         const amountDisplay = input.nextElementSibling;
-        amountDisplay.textContent = `¥${formatNumber(amount)}`;
+        amountDisplay.textContent = formatNumber(amount);
         rowTotal += amount;
     });
 
     // 行合計の更新
-    row.querySelector('.row-total').textContent = `¥${formatNumber(rowTotal)}`;
+    row.querySelector('.row-total').textContent = formatNumber(rowTotal);
     updateTotals();
+    
+    // 自動保存を実行
+    debounce(saveAllData, 1000)();
 }
 
 // 合計の更新
@@ -209,12 +212,12 @@ function updateTotals() {
     // 月別合計の表示更新
     monthTotals.forEach((total, index) => {
         const monthTotalCell = document.querySelector(`.month-total[data-month="${index + 1}"]`);
-        monthTotalCell.textContent = `¥${formatNumber(total)}`;
+        monthTotalCell.textContent = formatNumber(total);
         yearTotal += total;
     });
 
     // 年間合計の更新
-    document.querySelector('.year-total').textContent = `¥${formatNumber(yearTotal)}`;
+    document.querySelector('.year-total').textContent = formatNumber(yearTotal);
 }
 
 // 行の削除（修正）
@@ -238,7 +241,7 @@ function formatNumber(number) {
 
 // 金額表示からの数値変換
 function parseAmountDisplay(text) {
-    return parseFloat(text.replace('¥', '').replace(/,/g, '')) || 0;
+    return parseFloat(text.replace(/,/g, '')) || 0;
 }
 
 // 行の編集モード切り替え（修正）
@@ -264,6 +267,156 @@ function editRow(button) {
         });
         button.innerHTML = '<i class="fas fa-save"></i>';
     }
+}
+
+// 自動保存のためのdebounce関数
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// データの保存
+async function saveAllData() {
+    try {
+        const rows = document.querySelectorAll('.plan-row');
+        const saveData = {
+            business_id: currentBusinessId,
+            values: {}
+        };
+
+        rows.forEach(row => {
+            const customerId = row.querySelector('.customer-select').value;
+            if (!customerId) return;
+
+            const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+            const quantities = {};
+
+            row.querySelectorAll('.quantity-input').forEach(input => {
+                const month = input.dataset.month;
+                quantities[month] = parseFloat(input.value) || 0;
+            });
+
+            saveData.values[customerId] = {
+                unit_price: unitPrice,
+                quantities: quantities
+            };
+        });
+
+        const response = await fetch('/api/revenue-plan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(saveData)
+        });
+
+        if (response.ok) {
+            // 保存成功時の通知
+            const saveBtn = document.querySelector('.save-btn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>保存完了';
+            setTimeout(() => {
+                saveBtn.innerHTML = originalText;
+            }, 2000);
+        } else {
+            throw new Error('保存に失敗しました');
+        }
+    } catch (error) {
+        console.error('保存エラー:', error);
+        alert('データの保存に失敗しました。');
+    }
+}
+
+// データ保存処理の関数
+async function saveRevenuePlan() {
+    try {
+        const rows = document.querySelectorAll('.plan-row');
+        const saveData = {
+            business_id: currentBusinessId,
+            values: {}
+        };
+
+        // 各行のデータを収集
+        rows.forEach(row => {
+            const customerId = row.querySelector('.customer-select').value;
+            if (!customerId) return;
+
+            const quantities = {};
+            let hasChanges = false;
+
+            // 各月のデータを収集
+            row.querySelectorAll('.quantity-input').forEach(input => {
+                const month = input.dataset.month;
+                const quantity = parseInt(input.value) || 0;
+                
+                // 変更があった場合のみ保存対象に含める
+                if (quantity !== (input.dataset.originalValue || 0)) {
+                    quantities[month] = quantity;
+                    hasChanges = true;
+                }
+            });
+
+            // 変更があったデータのみを保存対象に含める
+            if (hasChanges) {
+                saveData.values[customerId] = {
+                    quantities: quantities
+                };
+            }
+        });
+
+        // データを保存
+        const response = await fetch('/api/revenue-plan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(saveData)
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || '保存に失敗しました');
+        }
+
+        // 保存成功時の処理
+        showSuccessMessage('収益計画を保存しました');
+        
+        // 保存したデータを現在の値として設定
+        rows.forEach(row => {
+            row.querySelectorAll('.quantity-input').forEach(input => {
+                input.dataset.originalValue = input.value;
+            });
+        });
+
+    } catch (error) {
+        console.error('保存エラー:', error);
+        showErrorMessage('データの保存に失敗しました');
+    }
+}
+
+// 成功メッセージを表示する関数
+function showSuccessMessage(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg';
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    setTimeout(() => messageDiv.remove(), 3000);
+}
+
+// エラーメッセージを表示する関数
+function showErrorMessage(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg';
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    setTimeout(() => messageDiv.remove(), 3000);
 }
 
 // DOMContentLoadedイベントリスナーの修正

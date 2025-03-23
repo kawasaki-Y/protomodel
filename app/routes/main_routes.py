@@ -6,6 +6,7 @@ from app.models.sales_record import SalesRecord
 from datetime import datetime, timedelta
 import random
 from flask import session
+from app.models.revenue_plan import RevenuePlan, RevenuePlanValue
 
 # Blueprintの定義を修正
 bp = Blueprint('main', __name__)
@@ -251,35 +252,85 @@ def save_revenue_plan():
         data = request.get_json()
         business_id = data.get('business_id')
         values = data.get('values', {})
-        
-        # 事業所有者チェック
-        business = RevenueBusiness.query.get_or_404(business_id)
-        if business.user_id != current_user.id:
-            abort(403)
-        
-        # 既存のデータを一旦削除
-        RevenuePlanValue.query.filter_by(business_id=business_id).delete()
-        
-        # 新しいデータを保存
-        for customer_id, services in values.items():
-            for service_id, months in services.items():
-                for month, value in months.items():
-                    plan_value = RevenuePlanValue(
+
+        if not business_id:
+            return jsonify({'error': '事業IDが指定されていません'}), 400
+
+        try:
+            # トランザクション内で全ての処理を実行
+            for customer_id, plan_data in values.items():
+                if not customer_id:
+                    continue
+
+                try:
+                    customer_id = int(customer_id)
+                except ValueError:
+                    current_app.logger.error(f'不正な顧客ID: {customer_id}')
+                    return jsonify({'error': '不正な顧客IDが指定されています'}), 400
+
+                # 既存のRevenuePlanを検索
+                revenue_plan = RevenuePlan.query.filter_by(
+                    business_id=business_id,
+                    customer_id=customer_id
+                ).first()
+
+                # RevenuePlanが存在しない場合は新規作成
+                if not revenue_plan:
+                    revenue_plan = RevenuePlan(
                         business_id=business_id,
-                        customer_id=int(customer_id),
-                        service_id=int(service_id),
-                        month=int(month),
-                        value=float(value)
+                        customer_id=customer_id,
+                        unit_price=plan_data.get('unit_price', 0)
                     )
-                    db.session.add(plan_value)
-        
-        db.session.commit()
-        return jsonify({'status': 'success'})
-        
+                    db.session.add(revenue_plan)
+                    db.session.flush()  # IDを取得するためにflush
+
+                # 月別データの保存
+                for month, quantity in plan_data.get('quantities', {}).items():
+                    try:
+                        month_num = int(month)
+                        if not (1 <= month_num <= 12):
+                            raise ValueError('月の値が範囲外です')
+
+                        # 既存の月別データを検索
+                        plan_value = RevenuePlanValue.query.filter_by(
+                            revenue_plan_id=revenue_plan.id,
+                            month=month_num
+                        ).first()
+
+                        if plan_value:
+                            # 既存データの更新
+                            plan_value.quantity = quantity
+                            plan_value.updated_at = datetime.utcnow()
+                        else:
+                            # 新規データの作成
+                            new_value = RevenuePlanValue(
+                                revenue_plan_id=revenue_plan.id,
+                                month=month_num,
+                                quantity=quantity
+                            )
+                            db.session.add(new_value)
+
+                    except ValueError as e:
+                        db.session.rollback()
+                        current_app.logger.error(f'月の値が不正です: {month}, エラー: {str(e)}')
+                        return jsonify({'error': f'月の値が不正です: {month}'}), 400
+
+            # すべての変更をコミット
+            db.session.commit()
+            current_app.logger.info('収益計画の保存が完了しました')
+            
+            return jsonify({
+                'success': True,
+                'message': '収益計画を保存しました'
+            })
+
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"収益計画の保存中にエラーが発生: {str(e)}")
-        return jsonify({'error': 'データの保存に失敗しました'}), 500
+        current_app.logger.error(f'収益計画の保存中にエラーが発生: {str(e)}')
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/revenue-plan/delete-row', methods=['POST'])
 @login_required

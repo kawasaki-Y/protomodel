@@ -41,6 +41,7 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">顧客名</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                 </tr>
@@ -48,6 +49,7 @@
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for customer in customers %}
                 <tr id="customer-row-{{ customer.id }}">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ customer.id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <span class="customer-name">{{ customer.name }}</span>
                         <input type="text" class="customer-edit-input hidden mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
